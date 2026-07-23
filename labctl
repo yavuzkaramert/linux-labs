@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LABS_DIR="$SCRIPT_DIR/labs"
+IMAGE="linux-labs:latest"
+
+die() {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+usage() {
+    cat <<EOF
+Usage: labctl <command> [args]
+
+Commands:
+  list             List available labs
+  start <id>       Start a lab from scratch (removes old container)
+  shell <id>       Open a shell in the lab as the student user
+  check <id>       Run the lab's checks and show PASS/FAIL
+  reset <id>       Same as start — rebuild the lab from scratch
+  solution <id>    Show the lab's solution
+EOF
+    exit 1
+}
+
+require_docker() {
+    command -v docker >/dev/null 2>&1 ||
+        die "docker not found. Install Docker Desktop, OrbStack or Colima first."
+}
+
+# Resolve a lab id (full name or numeric prefix) to a directory.
+# Sets LAB_DIR, LAB_ID, CONTAINER.
+resolve_lab() {
+    local id="${1:-}"
+    [ -n "$id" ] || usage
+
+    if [ -d "$LABS_DIR/$id" ]; then
+        LAB_DIR="$LABS_DIR/$id"
+    else
+        local matches=("$LABS_DIR/$id"*/)
+        [ -d "${matches[0]}" ] || die "lab not found: $id (try: labctl list)"
+        [ "${#matches[@]}" -eq 1 ] || die "ambiguous lab id: $id"
+        LAB_DIR="${matches[0]%/}"
+    fi
+    LAB_ID="$(basename "$LAB_DIR")"
+    CONTAINER="lab-$LAB_ID"
+}
+
+ensure_image() {
+    if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Building image $IMAGE ..."
+        docker build -t "$IMAGE" "$SCRIPT_DIR"
+    fi
+}
+
+cmd_list() {
+    [ -d "$LABS_DIR" ] || die "no labs directory: $LABS_DIR"
+    local dir id title
+    for dir in "$LABS_DIR"/*/; do
+        [ -d "$dir" ] || continue
+        id="$(basename "$dir")"
+        title="$(grep -m1 '^#' "$dir/TASK.md" 2>/dev/null | sed 's/^#* *//' || true)"
+        printf '%-24s %s\n' "$id" "${title:-}"
+    done
+}
+
+cmd_start() {
+    resolve_lab "$1"
+    require_docker
+    ensure_image
+
+    docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+    docker run -d --name "$CONTAINER" "$IMAGE" >/dev/null
+    docker exec "$CONTAINER" mkdir -p /lab
+    docker cp "$LAB_DIR/." "$CONTAINER:/lab/"
+    docker exec -u root "$CONTAINER" bash /lab/setup.sh
+
+    echo "Lab '$LAB_ID' ready."
+    echo "Task: /lab/TASK.md  (inside shell: cat /lab/TASK.md)"
+    echo "Enter with: labctl shell $LAB_ID"
+}
+
+cmd_shell() {
+    resolve_lab "$1"
+    require_docker
+    docker exec -it "$CONTAINER" su - student
+}
+
+cmd_check() {
+    resolve_lab "$1"
+    require_docker
+    if docker exec -u root "$CONTAINER" bash /lab/check.sh; then
+        echo ""
+        echo "SONUÇ: GEÇTİ ✅"
+    else
+        echo ""
+        echo "SONUÇ: KALDI ❌"
+        exit 1
+    fi
+}
+
+cmd_solution() {
+    resolve_lab "$1"
+    [ -f "$LAB_DIR/solution.md" ] || die "no solution.md for $LAB_ID"
+    cat "$LAB_DIR/solution.md"
+}
+
+main() {
+    local cmd="${1:-}"
+    shift || true
+    case "$cmd" in
+        list)      cmd_list ;;
+        start)     cmd_start "${1:-}" ;;
+        shell)     cmd_shell "${1:-}" ;;
+        check)     cmd_check "${1:-}" ;;
+        reset)     cmd_start "${1:-}" ;;
+        solution)  cmd_solution "${1:-}" ;;
+        *)         usage ;;
+    esac
+}
+
+main "$@"
