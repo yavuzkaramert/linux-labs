@@ -22,6 +22,8 @@ Docker container — break things freely, `reset` and start over.
 Stuck? Recommended order: try it yourself → `man <command>` →
 `hint 1` → `hint 2` → `hint 3` → `solution`.
 
+Every passed `check` auto-commits your progress (`lab <id> solved`).
+
 Inside the container the lab lives in `/lab` — start with `cat /lab/TASK.md`.
 The `student` user has passwordless sudo.
 
