@@ -20,6 +20,7 @@ Commands:
   shell <id>       Open a shell in the lab as the student user
   check <id>       Run the lab's checks and show PASS/FAIL
   reset <id>       Same as start — rebuild the lab from scratch
+  hint <id> [1-3]  Show a hint at the given level (default: 1)
   solution <id>    Show the lab's solution
 EOF
     exit 1
@@ -101,6 +102,21 @@ cmd_check() {
     fi
 }
 
+cmd_hint() {
+    resolve_lab "$1"
+    local level="${2:-1}"
+    case "$level" in
+        1|2|3) ;;
+        *) die "usage: labctl hint <id> [1|2|3]" ;;
+    esac
+    [ -f "$LAB_DIR/hints.md" ] ||
+        die "Bu lab'da hints.md yok (001 eski formatta)."
+    local section
+    section="$(awk -v lvl="$level" '/^## /{p = ($0 == "## Seviye " lvl)} p' "$LAB_DIR/hints.md")"
+    [ -n "$section" ] || die "hints.md içinde \"## Seviye $level\" bölümü yok"
+    echo "$section"
+}
+
 cmd_solution() {
     resolve_lab "$1"
     [ -f "$LAB_DIR/solution.md" ] || die "no solution.md for $LAB_ID"
@@ -116,6 +132,7 @@ main() {
         shell)     cmd_shell "${1:-}" ;;
         check)     cmd_check "${1:-}" ;;
         reset)     cmd_start "${1:-}" ;;
+        hint)      cmd_hint "${1:-}" "${2:-1}" ;;
         solution)  cmd_solution "${1:-}" ;;
         *)         usage ;;
     esac
