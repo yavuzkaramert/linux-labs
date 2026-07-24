@@ -1,3 +1,13 @@
 .DS_Store
 *.log
 .code-review-graph/
+
+# Secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+credentials
+.netrc
