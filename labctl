@@ -91,8 +91,10 @@ cmd_shell() {
 
 # Commit progress after a passed check. The lab is solved inside the
 # container, so the host tree stays clean — record the pass in
-# PROGRESS.md to have something to commit. Silently a no-op when git
-# is missing, this is not a repo, or the pass is already recorded.
+# PROGRESS.md to have something to commit. Only PROGRESS.md is staged
+# and committed, so any other pending work in the tree is left alone.
+# Silently a no-op when git is missing, this is not a repo, or the
+# pass is already recorded.
 auto_commit() {
     command -v git >/dev/null 2>&1 || return 0
     git -C "$SCRIPT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
@@ -101,9 +103,9 @@ auto_commit() {
     if ! grep -q "^- $LAB_ID solved" "$progress"; then
         printf -- '- %s solved (%s)\n' "$LAB_ID" "$(date +%Y-%m-%d)" >> "$progress"
     fi
-    [ -n "$(git -C "$SCRIPT_DIR" status --porcelain)" ] || return 0
-    git -C "$SCRIPT_DIR" add -A
-    git -C "$SCRIPT_DIR" commit -q -m "lab $LAB_ID solved"
+    git -C "$SCRIPT_DIR" add -- PROGRESS.md
+    git -C "$SCRIPT_DIR" diff --cached --quiet -- PROGRESS.md && return 0
+    git -C "$SCRIPT_DIR" commit -q -m "lab $LAB_ID solved" -- PROGRESS.md
     echo "İlerleme commitlendi: lab $LAB_ID solved"
 }
 
