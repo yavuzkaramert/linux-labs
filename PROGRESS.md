@@ -10,3 +10,16 @@
   - izin (görev 1): chgrp+chmod g+r tek denemede → 001 tekrarı oturmuş
   - zayıf: awk alan modeli, sed adresleme. sağlam: find sonrası izin, grep süzme
 - 005-processes solved (2026-07-27)
+  - hint kullanılmadı — ilk hint'siz lab
+  - ps -oe ↔ -eo transpozisyonu 4 kez (56,57,59,63) → syntax, kas hafızası
+  - "seçmediğin sütunu grepleyemezsin": ps -eo ni | grep LABPROC 4 kez boş
+    döndü (63-67) → 68'de ni,cmd ile çözdü. labın en değerli dersi
+  - ps aux + awk $11 komut satırını kırptı → 53'te ps -eo pid,args'e geçti
+    (004'ten sarkan awk alan modeli zayıflığının tekrarı — HÂLÂ ZAYIF)
+  - SIGTERM -15 35: sinyali komut sandı, 1 satırda düzeltti (refleks)
+  - bracket trick [L]ABPROC kendi buldu → grep self-match tuzağı sağlam
+  - renice -n 19 -p 42 tek denemede → nice ters modeli oturmuş
+  - sinyal seçimi (TERM vs KILL) tek denemede doğru
+  - boşluk: pgrep/pkill hiç kullanılmadı, hep ps+gözle PID okuma → 011'de tekrar
+  - zayıf: awk alan modeli, ps -o sütun seçimi.
+  - sağlam: sinyal kavramı, nice modeli, araç değiştirme refleksi
