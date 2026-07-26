@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ENV: container
 # Runs as root. Creates the broken state for lab 002. Idempotent.
 set -euo pipefail
 
@@ -10,13 +11,13 @@ else
 fi
 
 # Criteria 2/3/8: ayse exists but half-configured — wrong shell,
-# not in developers, and wrongly added to sudo
+# not in developers, and wrongly added to wheel
 if ! id ayse >/dev/null 2>&1; then
     useradd -m ayse
 fi
 usermod -s /bin/sh ayse
 gpasswd -d ayse developers >/dev/null 2>&1 || true
-usermod -aG sudo ayse
+usermod -aG wheel ayse
 
 # Criteria 2/3: mehmet was never created
 userdel -r mehmet >/dev/null 2>&1 || true

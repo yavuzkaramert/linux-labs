@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ENV: container
 # Runs as root. Creates the broken state for lab 001.
 set -euo pipefail
 

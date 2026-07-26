@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ENV: container
 # Root olarak çalışır. Lab 005'in bozuk durumunu kurar. Idempotent.
 #
 # DİKKAT — bu lab dosya değil CANLI SÜREÇ üzerinde çalışır:

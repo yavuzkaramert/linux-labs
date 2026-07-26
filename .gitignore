@@ -2,6 +2,9 @@
 *.log
 .code-review-graph/
 
+# Per-lab session recordings (history + exit codes) — local debrief material
+.sessions/
+
 # Secrets — never commit
 .env
 .env.*

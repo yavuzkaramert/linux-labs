@@ -17,7 +17,7 @@ sudo useradd -m -s /bin/bash mehmet   # create mehmet with home dir and bash
 sudo usermod -aG developers mehmet    # mehmet joins developers as secondary
 ```
 
-`useradd` on Ubuntu creates a same-named primary group per user by default,
+`useradd` on RHEL/Rocky (USERGROUPS_ENAB yes) creates a same-named primary group per user,
 which satisfies the primary-group criterion.
 
 ## 4. Create the deploybot service account
@@ -43,10 +43,10 @@ The setgid bit (the leading `2`) makes every new file inside inherit the
 sudo userdel -r tolga   # delete the account and its home directory
 ```
 
-## 8. Take ayse out of sudo
+## 8. Take ayse out of wheel
 
 ```bash
-sudo gpasswd -d ayse sudo   # remove ayse from the sudo group
+sudo gpasswd -d ayse wheel   # remove ayse from the wheel group
 ```
 
 ## Verify

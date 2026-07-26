@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LABS_DIR="$SCRIPT_DIR/labs"
+SESSIONS_DIR="$SCRIPT_DIR/.sessions"
 IMAGE="linux-labs:latest"
 
 die() {
@@ -72,8 +73,16 @@ cmd_start() {
     require_docker
     ensure_image
 
+    # Session dir survives the container: history and exit codes are the raw
+    # material for the debrief, so they live on the host, not inside the box.
+    local session_dir="$SESSIONS_DIR/$LAB_ID"
+    mkdir -p "$session_dir"
+
     docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
-    docker run -d --name "$CONTAINER" "$IMAGE" >/dev/null
+    docker run -d --name "$CONTAINER" -v "$session_dir:/session" "$IMAGE" >/dev/null
+    # The bind mount hides the image's /session, so re-assert student can write.
+    docker exec -u root "$CONTAINER" \
+        sh -c 'chown student:student /session 2>/dev/null || chmod 0777 /session'
     docker exec "$CONTAINER" mkdir -p /lab
     docker cp "$LAB_DIR/." "$CONTAINER:/lab/"
     docker exec -u root "$CONTAINER" bash /lab/setup.sh

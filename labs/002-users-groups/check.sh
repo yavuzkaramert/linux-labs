@@ -124,11 +124,11 @@ else
     bad "$r"
 fi
 
-# --- 8. negative: ayse not in sudo ---
-if in_group ayse sudo; then
-    bad "ayse must not be in the sudo group"
+# --- 8. negative: ayse not in wheel ---
+if in_group ayse wheel; then
+    bad "ayse must not be in the wheel group"
 else
-    ok "ayse is not in the sudo group"
+    ok "ayse is not in the wheel group"
 fi
 
 exit "$FAIL"

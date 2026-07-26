@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ENV: container
 # Root olarak çalışır. Lab 003'ün bozuk durumunu kurar. Idempotent:
 # /srv/data her seferinde sıfırdan yaratılır.
 set -euo pipefail

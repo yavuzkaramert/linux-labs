@@ -29,7 +29,7 @@ never set up properly. Bring the server to the state below.
 7. The user `tolga` no longer works here. Neither the account `tolga`
    nor `/home/tolga` exists on the system.
 
-8. `ayse` is NOT in the `sudo` group.
+8. `ayse` is NOT in the `wheel` group (the RHEL admin group).
 
 ## Checking your work
 
