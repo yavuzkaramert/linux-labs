@@ -37,7 +37,9 @@ doğrulanır; üçüncü parti kaynaklar eskiyor.
 ## Platform
 
 - Docker container, `student` kullanıcısı, şifresiz sudo.
-- Base image: **rockylinux:10** (RHEL 10 uyumlu). 005'e kadar ubuntu:24.04
+- Base image: **rockylinux/rockylinux:10** (RHEL 10 uyumlu; Docker Hub'ın resmi
+  library reposundaki `rockylinux` tag'leri güncellenmiyor — 9.3'te donmuş,
+  image RESF'in kendi reposundan alınıyor). 005'e kadar ubuntu:24.04
   kullanıldı; RHCSA'ya yönelme kararıyla 006'dan itibaren Rocky'ye geçildi.
   Sebep: dnf/rpm, firewalld, SELinux, nmcli Ubuntu'da ya yok ya farklı.
 - `labctl` bash scripti + `labs/` klasörü.
@@ -119,6 +121,11 @@ Snapshot yalnız 019 (boot/GRUB kurtarma) için gerekir.
 - Commit geçmişi (git log / GitHub) aynı zamanda ilerleme kaydıdır.
 - Kalıcı kayıt yalnız PUSH edilmiş halde görülür. Debrief notu yazıldıktan
   sonra push edilir; sonraki sohbet repodan okur.
+- Regresyon/doğrulama amaçlı `check` çalıştırıldığında da otomatik commit
+  atılır ve PROGRESS.md'ye yanlış tarihli "solved" satırı düşer. Toplu
+  doğrulama sonrası `git log` ve PROGRESS.md kontrol edilip sahte satır
+  `git reset --soft` ile temizlenir. (Bayrak eklenmedi; ikinci kez ısırırsa
+  eklenecek.)
 
 ## Değişmez kurallar
 
@@ -152,6 +159,19 @@ başlatılmaz; yoksa not "solved" commit'ine karışır.)
 
 Terminal geçmişini süzmek için (container kapanmadan önce):
 `history | grep -vE '^\s*[0-9]+\s+(cat|ls|cd|clear|pwd|less|head|tail|man)\b'`
+
+## Günlük kaydı — JOURNAL.md
+
+PROGRESS.md "hangi lab, hangi hata" tutar. JOURNAL.md ise oturum düzeyinde
+"o gün ne yapıldı, hangi karar neden verildi" tutar. İkisi farklı şeyler;
+karıştırılmaz.
+
+JOURNAL.md'ye yazılanlar: alınan kararlar ve gerekçeleri, ortam/altyapı
+değişiklikleri, açık kalan maddeler, sonraki oturumun başlangıç noktası.
+Yazılmayanlar: lab hata analizi (o PROGRESS.md'de), sohbet dökümü.
+
+Ne zaman: her sohbetin sonunda, ya da gün sonunda. Yeni sohbete
+başlarken CONTEXT.md + PROGRESS.md + JOURNAL.md'nin son girdisi okunur.
 
 ## Müfredat haritası
 

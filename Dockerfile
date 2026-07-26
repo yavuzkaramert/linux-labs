@@ -23,13 +23,20 @@ RUN dnf -y --allowerasing install \
         procps-ng psmisc util-linux findutils diffutils \
         coreutils grep sed gawk \
         passwd shadow-utils \
-        tar gzip bzip2 xz cronie \
+        tar gzip bzip2 xz cronie tzdata \
         iproute bind-utils curl \
         glibc-langpack-en \
     && dnf -y reinstall '*' \
     && mandb -q \
     && dnf clean all \
     && rm -rf /var/cache/dnf
+
+# Saat dilimi host ile aynı olmalı: exitlog ve history damgaları debrief'in
+# ham verisi, UTC ile host arasındaki 3 saatlik kayma onları okunmaz yapıyordu.
+# /etc/localtime asıl düzeltme — `su - student` login shell'i ortamı sıfırlar,
+# ENV TZ'ye güvenilmez. ENV ikinci katman güvence.
+RUN ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime
+ENV TZ=Europe/Istanbul
 
 # Ev dizini izni bilinçli olarak RHEL'in kendi varsayılanına (0700) sabitlenir.
 # Ubuntu 0755 veriyordu. RHCSA hedefi RHEL'in gerçek davranışını öğretmeyi

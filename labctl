@@ -79,7 +79,11 @@ cmd_start() {
     mkdir -p "$session_dir"
 
     docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
-    docker run -d --name "$CONTAINER" -v "$session_dir:/session" "$IMAGE" >/dev/null
+    # SYS_NICE is not in Docker's default capability set. Without it a setup.sh
+    # that lowers a process's nice value fails silently (warning on stderr,
+    # exit 0), so lab 005 would hand out its nice criterion for free.
+    docker run -d --name "$CONTAINER" --cap-add SYS_NICE \
+        -v "$session_dir:/session" "$IMAGE" >/dev/null
     # The bind mount hides the image's /session, so re-assert student can write.
     docker exec -u root "$CONTAINER" \
         sh -c 'chown student:student /session 2>/dev/null || chmod 0777 /session'
