@@ -9,3 +9,4 @@
   - yazım: [[space]]→[[:space:]], sed'e dosya adı vermeyi unutma
   - izin (görev 1): chgrp+chmod g+r tek denemede → 001 tekrarı oturmuş
   - zayıf: awk alan modeli, sed adresleme. sağlam: find sonrası izin, grep süzme
+- 005-processes solved (2026-07-27)
