@@ -14,6 +14,7 @@ Docker container — break things freely, `reset` and start over.
 ./labctl start 001        # start lab (fresh container, broken state applied)
 ./labctl shell 001        # enter the lab as the "student" user
 ./labctl check 001        # run checks — GEÇTİ / KALDI
+./labctl check 001 --no-commit   # same, but never touches git/PROGRESS.md
 ./labctl reset 001        # wipe and rebuild the lab
 ./labctl hint 002 1       # progressive hint, level 1-3 (default: 1)
 ./labctl solution 001     # show the solution

@@ -121,11 +121,12 @@ Snapshot yalnız 019 (boot/GRUB kurtarma) için gerekir.
 - Commit geçmişi (git log / GitHub) aynı zamanda ilerleme kaydıdır.
 - Kalıcı kayıt yalnız PUSH edilmiş halde görülür. Debrief notu yazıldıktan
   sonra push edilir; sonraki sohbet repodan okur.
-- Regresyon/doğrulama amaçlı `check` çalıştırıldığında da otomatik commit
-  atılır ve PROGRESS.md'ye yanlış tarihli "solved" satırı düşer. Toplu
-  doğrulama sonrası `git log` ve PROGRESS.md kontrol edilip sahte satır
-  `git reset --soft` ile temizlenir. (Bayrak eklenmedi; ikinci kez ısırırsa
-  eklenecek.)
+- Regresyon/doğrulama amaçlı koşularda `check <id> --no-commit` kullanılır:
+  check normal çalışır, GEÇTİ/KALDI normal basılır, git'e ve PROGRESS.md'ye
+  dokunulmaz. Bayrak yokken davranış eskisiyle birebir aynıdır. Bayrak
+  006 yazımı sırasında eklendi: doğrulama koşuları PROGRESS.md'ye yanlış
+  tarihli "solved" satırı düşürüp elle `git reset --soft` gerektiriyordu ve
+  bu her yeni labda tekrarlayan yapısal bir sorundu.
 
 ## Değişmez kurallar
 

@@ -19,7 +19,9 @@ Commands:
   list             List available labs
   start <id>       Start a lab from scratch (removes old container)
   shell <id>       Open a shell in the lab as the student user
-  check <id>       Run the lab's checks and show PASS/FAIL
+  check <id> [--no-commit]
+                   Run the lab's checks and show PASS/FAIL
+                   --no-commit: skip the progress commit (verification runs)
   reset <id>       Same as start — rebuild the lab from scratch
   hint <id> [1-3]  Show a hint at the given level (default: 1)
   solution <id>    Show the lab's solution
@@ -122,13 +124,22 @@ auto_commit() {
     echo "İlerleme commitlendi: lab $LAB_ID solved"
 }
 
+# --no-commit exists for verification runs (regression sweeps, authoring a new
+# lab). Those pass the check without the lab actually having been solved, and
+# the resulting commit puts a wrong-dated "solved" line in PROGRESS.md.
 cmd_check() {
     resolve_lab "$1"
+    local no_commit=0
+    case "${2:-}" in
+        --no-commit) no_commit=1 ;;
+        '')          ;;
+        *)           die "usage: labctl check <id> [--no-commit]" ;;
+    esac
     require_docker
     if docker exec -u root "$CONTAINER" bash /lab/check.sh; then
         echo ""
         echo "SONUÇ: GEÇTİ ✅"
-        auto_commit
+        [ "$no_commit" -eq 1 ] || auto_commit
     else
         echo ""
         echo "SONUÇ: KALDI ❌"
@@ -164,7 +175,7 @@ main() {
         list)      cmd_list ;;
         start)     cmd_start "${1:-}" ;;
         shell)     cmd_shell "${1:-}" ;;
-        check)     cmd_check "${1:-}" ;;
+        check)     cmd_check "${1:-}" "${2:-}" ;;
         reset)     cmd_start "${1:-}" ;;
         hint)      cmd_hint "${1:-}" "${2:-1}" ;;
         solution)  cmd_solution "${1:-}" ;;
