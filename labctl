@@ -66,6 +66,10 @@ cmd_list() {
         [ -d "$dir" ] || continue
         id="$(basename "$dir")"
         title="$(grep -m1 '^#' "$dir/TASK.md" 2>/dev/null | sed 's/^#* *//' || true)"
+        # 007'den itibaren TASK.md setext başlık kullanıyor (`#` yok) — başlık
+        # satırı altındaki `===`/`---` çizgisinden okunur.
+        [ -n "$title" ] || title="$(awk 'NR==2 && /^[=-]{3,}[[:space:]]*$/ {print prev}
+                                        {prev = $0}' "$dir/TASK.md" 2>/dev/null || true)"
         printf '%-24s %s\n' "$id" "${title:-}"
     done
 }
@@ -124,6 +128,23 @@ auto_commit() {
     echo "İlerleme commitlendi: lab $LAB_ID solved"
 }
 
+# Debrief girdisi: oturumun komut geçmişi, zaman damgalı.
+# Pencere DEBRIEF_HOURS ile ayarlanır (varsayılan 24 saat).
+debrief_history() {
+    local h="${DEBRIEF_HOURS:-24}"
+    echo ""
+    echo "--- debrief history (son ${h} saat) ---"
+    docker exec "$CONTAINER" bash -lc '
+        [ -r /session/history ] || { echo "(oturum geçmişi bulunamadı)"; exit 0; }
+        since=$(date -d "'"$h"' hours ago" +%s)
+        gawk -v since="$since" '"'"'
+            /^#/          { t = substr($0, 2) + 0; next }
+            $0 == "clear" { next }
+            t >= since    { print strftime("%H:%M", t), $0 }
+        '"'"' /session/history
+    '
+}
+
 # --no-commit exists for verification runs (regression sweeps, authoring a new
 # lab). Those pass the check without the lab actually having been solved, and
 # the resulting commit puts a wrong-dated "solved" line in PROGRESS.md.
@@ -140,6 +161,7 @@ cmd_check() {
         echo ""
         echo "SONUÇ: GEÇTİ ✅"
         [ "$no_commit" -eq 1 ] || auto_commit
+        debrief_history
     else
         echo ""
         echo "SONUÇ: KALDI ❌"
