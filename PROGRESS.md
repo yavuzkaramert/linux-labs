@@ -23,3 +23,4 @@
   - boşluk: pgrep/pkill hiç kullanılmadı, hep ps+gözle PID okuma → 011'de tekrar
   - zayıf: awk alan modeli, ps -o sütun seçimi.
   - sağlam: sinyal kavramı, nice modeli, araç değiştirme refleksi
+- 006-shell-scripting solved (2026-07-28)
