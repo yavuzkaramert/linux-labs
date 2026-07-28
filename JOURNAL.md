@@ -149,3 +149,66 @@ fonksiyon. Zayıf konu serpiştirmesi: awk alan modeli (2 kez zayıf çıktı),
 
 Ayrıca "lab öncesi brifing" adımı konuşuldu; Yavuz kendi halledeceğini
 söyledi, kural olarak CONTEXT.md'ye yazılmadı.
+
+## 2026-07-28 — Lab 006 kapandı, 007 A/B olarak ikiye ayrıldı
+
+### Yapılanlar
+
+- **Lab 006 (shell scripting) yazıldı, doğrulandı, çözüldü.** Üç script
+  zinciri: `logsum` (bozuk hâlde kurulur, onarılır), `svccheck` ve `report`
+  sıfırdan yazılır. 12 kriter. Debrief notu PROGRESS.md'ye işlendi.
+- **Ghost PID bulgusu ve setup yeniden tasarımı.** İlk tasarımda servis
+  süreçleri `#!/bin/bash` sarmalayıcı script'ti; `comm` değeri `bash` olduğu
+  için marker yalnız cmdline'da kalıyordu. Sonuç: sade `pgrep` hiç çalışmıyor,
+  tek yol `pgrep -f`, o da `svccheck`'in kendi komut satırını, komut
+  ikamesinin alt kabuğunu ve `check.sh`'ın `su -c '...'` satırını
+  eşleştiriyordu. Yani basit doğru cevap yoktu; çözüm `/proc/PID/cmdline`
+  süzmeyi gerektiriyordu ki bu 006'nın kapsamı değil.
+  **Karar:** düzeltme hint'e değil ortama ait. Gerçek `sleep` binary'si servis
+  adıyla kopyalanıp çalıştırılıyor, `comm` marker'ı taşıyor, sade `pgrep`
+  çalışıyor. `-f` yolu tuzak olarak duruyor ama artık hint'lenebilir.
+- **`labctl check --no-commit` eklendi.** CONTEXT'teki "ikinci kez ısırırsa
+  eklenecek" şartı doldu: doğrulama koşuları her yeni labda PROGRESS.md'ye
+  yanlış tarihli "solved" satırı düşürüyordu. Yapısal, tekrarlayan sorun.
+- **`labctl debrief_history` eklendi.** GEÇTİ'de container'ın
+  `/session/history` dosyası zaman damgalı olarak basılıyor. Pencere
+  `DEBRIEF_HOURS` (varsayılan 24). Debrief girdisi elle `cat` çekmekten
+  otomatiğe geçti.
+
+### Kararlar
+
+- **TASK.md yazım kuralı değişti.** Dosya terminalde `cat` ile okunuyor;
+  `**kalın**`, backtick ve `#` orada ham işaret olarak görünüp okumayı
+  zorlaştırıyordu. Yeni kural: setext başlık (altına `---` çizgisi), 72
+  sütun sabit sarma, backtick ve kalın yok, yollar çıplak metin, kriterler
+  tek satır `[ ]` ile. Setext seçilmesinin sebebi GitHub'da da h2 olarak
+  render edilmesi — iki ortam da kazanıyor. 001-006 geriye dönük
+  düzeltilmedi: kozmetik churn, öğrenme değeri yok.
+- **A/B lab konvansiyonu.** Konu ağırlaştıkça lab ikiye bölünebilir:
+  `NNNa` hafif ve tek araçlı (kavram yerleştirme), `NNNb` tam senaryo.
+  İkisi de ayrı klasör, 5 dosya kuralı değişmiyor, `labctl`'e dokunulmadı.
+  `labctl start 007` "ambiguous" diyor — istenen davranış, tam id yazdırıyor.
+- **İş bölümü değişti.** PROGRESS.md ve JOURNAL.md artık Claude Code
+  tarafından yazılıyor. Sınır korundu: debrief analizi sohbette yapılıyor,
+  Claude Code verilen metni yazıyor, bulgu üretmiyor.
+- **007 kapsamı A/B'ye bölündü.** 007a: grep/cut/sort/uniq, grep çıkış kodu,
+  vi giriş. 007b: ERE derinleşme, sed yakalama grupları, awk ilişkisel
+  dizileri, vi toplu düzenleme, ve 006'nın script + exit code sözleşmesinin
+  tekrarı. 007a'nın `echo $?` kriteri doğrudan 006 debrief'inden geldi.
+
+### Açık kalanlar / bilinen kusurlar
+
+- **`nano` kurulu değil.** 006 oturumunda sürtünme yarattı (`dnf install`
+  denendi, vim'e geçildi). Dockerfile'a tek kelime ama image rebuild +
+  001-006 regresyonu demek. **Karar: şimdi değil**, 013'teki VM geçişinde
+  ortam zaten yeniden kurulacak, oraya ertelendi.
+- **`/session` sahiplik uyumsuzluğu (kozmetik).** Önceki girdiden devam,
+  değişiklik yok.
+- **Apple Silicon / aarch64.** Önceki girdiden devam. 019'daki GRUB/UEFI
+  detayları x86'dan farklı olacak.
+
+### Sonraki adım
+
+**007a çözülecek.** Ardından `labctl check` GEÇTİ'de basılan debrief history
+çıktısı sohbette analiz edilecek, not PROGRESS.md'ye işlenecek, sonra 007b'ye
+geçilecek. 007b, 007a'nın çözülmüş olduğunu varsayıyor.
