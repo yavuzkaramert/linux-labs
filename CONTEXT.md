@@ -52,6 +52,18 @@ doğrulanır; üçüncü parti kaynaklar eskiyor.
 `labs/NNN-konu/` altında 5 dosya:
 - `TASK.md` — saf gereksinim: Hikâye + Görevler + Kabul kriterleri.
   İçinde İPUCU YOK. Görevler ve Kabul kriterleri AYRI bölümler olarak durur.
+  TASK.md terminalde `cat` ile okunur; markdown işaretleri orada ham metin
+  olarak görünüp okumayı zorlaştırıyor. Yazım kuralları:
+  - Başlıklar setext biçiminde: başlık satırı, altına `---` çizgisi.
+    Terminalde çizgi gibi, GitHub'da h2 olarak görünür. `#` kullanılmaz.
+  - Satırlar 72 sütunda sabit sarılır.
+  - Kalın (`**`) ve backtick KULLANILMAZ. Yollar ve komut adları çıplak
+    metin olarak yazılır: /usr/local/bin/logsum
+  - Görev ve kriter maddeleri arasında boş satır bırakılır.
+  - Kabul kriterleri tek satırda, 72 karakteri aşmadan, `[ ] ` ile başlar.
+    Uzun cümle yerine kısa ve sınanabilir ifade.
+  - Yalnız "Kontrol" bölümündeki komutlar 4 boşluk girintili blok olur.
+  Kural 007'den itibaren geçerlidir; 001-006 geriye dönük düzeltilmez.
 - `setup.sh` — ortamı bozuk kurar; HER kabul kriterini bozar, sıfır bedava OK.
   İlk satırında ortam işareti taşır: `# ENV: container` veya `# ENV: vm`.
 - `check.sh` — kriter başına [OK]/[FAIL], FAIL varsa exit 1, `set -e` YOK
@@ -64,6 +76,12 @@ doğrulanır; üçüncü parti kaynaklar eskiyor.
 
 Lab 001 eski formatta (hints.md yok, TASK.md içinde Hints bölümü var);
 bilinçli olarak öyle bırakıldı.
+
+  Konu ağırlaştıkça lab ikiye bölünebilir: NNNa (hafif, tek araçlı, kavram
+  yerleştirme) ve NNNb (tam senaryo, zincir ve script). İkisi de AYRI lab
+  klasörüdür ve 5 dosya kuralına birebir uyar; format değişmez. NNNb,
+  NNNa'nın çözülmüş olduğunu varsayar. `labctl start 007` iki klasörü de
+  eşleştirip "ambiguous" der; bu istenen davranıştır, tam id yazılır.
 
 ## Tooling donduruldu
 
@@ -154,12 +172,21 @@ Her lab sonrası, çözülen satırın altına girintili notlar eklenir. Örnek:
   zayıf: awk alan modeli, sed adresleme. sağlam: izin, grep süzme
 ```
 
-Akış: lab çöz → history filtrele → debrief → notu PROGRESS.md'ye ekle →
-commit → push → sonraki lab. (Not yazılıp commit'lenmeden sonraki lab
-başlatılmaz; yoksa not "solved" commit'ine karışır.)
+Akış: lab çöz → `labctl check` GEÇTİ'de basılan debrief history çıktısı
+sohbette analiz edilir → çıkan not Claude Code'a verilir → Claude Code
+notu PROGRESS.md'ye ekler ve commit'ler → sonraki lab. Aynı biçimde
+JOURNAL.md oturum girdisini de Claude Code yazar. Yavuz yalnız push eder.
 
-Terminal geçmişini süzmek için (container kapanmadan önce):
-`history | grep -vE '^\s*[0-9]+\s+(cat|ls|cd|clear|pwd|less|head|tail|man)\b'`
+Kayıt tutan taraf bulguyu ÜRETMEZ: debrief analizi sohbette yapılır,
+Claude Code kendisine verilen metni yazar. Terminal geçmişini görmeyen
+tarafın bulgu uydurması, kaydın değerini sıfırlar.
+
+(Not yazılıp commit'lenmeden sonraki lab başlatılmaz; yoksa not "solved"
+commit'ine karışır.)
+
+Debrief girdisi artık otomatik: `labctl check` GEÇTİ verdiğinde oturumun
+komut geçmişi zaman damgalı olarak basılır. Pencere DEBRIEF_HOURS ile
+ayarlanır (varsayılan 24 saat).
 
 ## Günlük kaydı — JOURNAL.md
 
@@ -189,7 +216,8 @@ hedeflerine bağlı (yukarı bak).
 
 ### Faz A — container (rockylinux:10)
 - 006 shell scripting temeli — değişken/koşul/döngü/exit code
-- 007 metin filtreleri + regex derinleşme + vi (LPIC 103 — en ağır başlık)
+- 007a text-filters — grep/cut/sort/uniq, grep çıkış kodu, vi giriş
+- 007b regex-report — ERE derinleşme, sed, awk dizileri, vi toplu düzenleme
 - 008 link/inode, FHS, tar/arşivleme
 - 009 paket yönetimi — dnf/rpm birincil, dpkg/apt eki
 - 010 systemd — servis, target, unit yazımı (privileged image burada)
