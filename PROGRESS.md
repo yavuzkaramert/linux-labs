@@ -24,3 +24,19 @@
   - zayıf: awk alan modeli, ps -o sütun seçimi.
   - sağlam: sinyal kavramı, nice modeli, araç değiştirme refleksi
 - 006-shell-scripting solved (2026-07-28)
+  - echo $? bir kez bile kullanılmadı. Labın merkez kavramı olan çıkış kodu
+    hiç gözlemlenmedi; sözleşme yalnız script içine yazıldı, kabukta sınanmadı
+  - pgrep/ps komut satırında hiç denenmedi — svccheck doğrudan vim'de yazıldı.
+    005'te işaretlenen boşluk kapanmadı, script içine taşındı
+  - birim test disiplini yok: logsum ve svccheck tek başına çalıştırılmadı,
+    yalnız bileşik report denendi. Hata bileşikte aranınca döngü uzadı
+  - awk '{print $2:$1}' → awk'ta birleştirme yan yana yazmaktır, ayırıcı
+    string literal olmalı: $2":"$1. 4 saniyede düzeltildi
+  - sudo ./report — izin sorununu düzeltmek yerine root'a kaçıldı; chmod +x
+    3 dakika sonra geldi. 001'deki aynı refleks
+  - ./report ile çalıştırıldı; /usr/local/bin zaten PATH'te, cd gereksizdi
+  - man yalnız bir kez (man chmod, chmod +x öncesi — kural doğru işledi).
+    awk, pgrep, bash man sayfalarına bakılmadı
+  - editör sürtünmesi: nano yok, dnf install denendi, vim'e geçildi
+  - zayıf: çıkış kodunun kabukta gözlenmesi, birim test disiplini, pgrep.
+    sağlam: awk -F alan modeli (004+005'ten sonra ilk kez tek seferde doğru)
