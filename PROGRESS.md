@@ -42,3 +42,4 @@
     sağlam: awk -F alan modeli (004+005'ten sonra ilk kez tek seferde doğru)
 - 007a-text-filters solved (2026-07-28)
 - 007b-regex-report solved (2026-07-28)
+- 008-links-fhs-archiving solved (2026-07-29)
