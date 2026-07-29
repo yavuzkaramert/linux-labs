@@ -40,6 +40,35 @@
   - editör sürtünmesi: nano yok, dnf install denendi, vim'e geçildi
   - zayıf: çıkış kodunun kabukta gözlenmesi, birim test disiplini, pgrep.
     sağlam: awk -F alan modeli (004+005'ten sonra ilk kez tek seferde doğru)
-- 007a-text-filters solved (2026-07-28)
-- 007b-regex-report solved (2026-07-28)
+- 007a-text-filters solved (debrief yapılmadı)
+- 007b-regex-report solved (debrief yapılmadı)
 - 008-links-fhs-archiving solved (2026-07-29)
+  - hint kullanılmadı (005'ten sonra ikinci hint'siz lab)
+  - alias sudo ile çalışmaz: mvmkdir alias'ı sudo mvmkdir'de
+    "command not found" verdi (alias sudo'nun başlattığı
+    process'e taşınmıyor) → gerçek script'e geçildi, hızlı
+    toparlanma
+  - sudo secure_path /usr/local/bin içermiyor (RHEL ailesi
+    varsayılanı): script orada çalışmadı, /usr/bin'e taşınınca
+    çözüldü — kök sebep deneme-yanılmayla aşıldı, doğrulanmadı
+    (sudo -l kontrolü önerilir)
+  - awk "{print $1}" (çift tırnak) → $1 shell'de genişledi,
+    awk'a boş geldi; '{print $1}' ile düzeltildi. awk alan
+    modelinin 004/005/006'dan farklı yüzü: bu kez -F değil,
+    tırnak seçimi
+  - ls -ı (Türkçe dotless ı, ASCII i değil) geçersiz bayrak —
+    klavye kaynaklı, sık kullanılan bayraklarda (-i) tekrar
+    riski var
+  - görev 2 (hard link tespiti) ~30 dk sürdü, script defalarca
+    revize edildi, çıktı dosyası bir kez elle de düzenlendi —
+    tıkanma noktası netleşmedi
+  - gözlem (gradelenmedi): sudo vim raporla.sh / arsiv_kontrol.sh
+    — kendi home dizininde sudo gereksizdi, 001/006 refleksinin
+    devamı
+  - sağlam: ln/ln -s ayrımı tek denemede doğru, tar --exclude
+    tek denemede doğru, tar -tf ile açmadan doğrulama ilk
+    seferde doğru araç, mvmkdir soyutlaması, script'i silip
+    yeniden çalıştırarak kendiliğinden idempotency testi
+  - zayıf: sudo/PATH ilişkisi (secure_path), awk script'inde
+    tırnak seçimi. sağlam: link komutları, tar --exclude,
+    doğrulama disiplini
