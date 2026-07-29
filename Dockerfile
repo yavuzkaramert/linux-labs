@@ -17,9 +17,13 @@ RUN sed -i '/^tsflags=nodocs/d' /etc/dnf/dnf.conf
 # (tek multicall binary) ile gelir; gerçek RHEL sunucusundaki `coreutils` ile
 # çakışır. Öğrenilen ortam gerçek sunucuya benzemeli → tam coreutils kurulur,
 # single sürüm silinir.
+#
+# ncurses: /usr/bin/clear, tput, reset ve infocmp bu pakette. vim-enhanced ile
+# less yalnız ncurses-libs'i (kütüphane) çekiyor, komutları getirmiyor.
 RUN dnf -y --allowerasing install \
         man-db man-pages \
         sudo vim-enhanced less which hostname tree file \
+        ncurses \
         procps-ng psmisc util-linux findutils diffutils \
         coreutils grep sed gawk \
         passwd shadow-utils \
