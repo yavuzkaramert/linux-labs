@@ -1,3 +1,26 @@
+# --- Lab 009 varlığı: ogrenci-arac_1.0_all.deb -----------------------------
+# Lab 009 öğrenciden kurulmamış bir .deb dosyasını incelemesini istiyor.
+# Gerçek bir Debian paketi indirmek yerine burada sıfırdan üretiliyor:
+# paket adı, sürümü ve içeriği bilinen ve SABİT olur, check.sh sürüm
+# sürüklenmesine yakalanmaz ve setup.sh network'e bağımlı kalmaz.
+# Architecture: all — bu stage'in mimarisi (arm64/amd64) sonucu etkilemez.
+FROM debian:stable AS debbuilder
+RUN mkdir -p /build/ogrenci-arac/DEBIAN /build/ogrenci-arac/usr/local/bin && \
+    printf '%s\n' \
+        'Package: ogrenci-arac' \
+        'Version: 1.0' \
+        'Section: utils' \
+        'Priority: optional' \
+        'Architecture: all' \
+        'Maintainer: linux-labs <lab@example.invalid>' \
+        'Description: Lab 009 icin uretilen ornek arac' \
+        ' Kurulmadan incelenmek uzere hazirlanmis kucuk bir Debian paketi.' \
+      > /build/ogrenci-arac/DEBIAN/control && \
+    printf '%s\n' '#!/bin/sh' 'echo "ogrenci-arac 1.0"' \
+      > /build/ogrenci-arac/usr/local/bin/ogrenci-arac && \
+    chmod 0755 /build/ogrenci-arac/usr/local/bin/ogrenci-arac && \
+    dpkg-deb --build /build/ogrenci-arac /build/ogrenci-arac_1.0_all.deb
+
 # Faz A base image — RHCSA hedefi RHEL'e özgü olduğu için RHEL uyumlu
 # bir dağıtım gerekiyor. Rocky 10, RHEL 10 (EX200 v10) ile birebir.
 #
@@ -20,10 +43,17 @@ RUN sed -i '/^tsflags=nodocs/d' /etc/dnf/dnf.conf
 #
 # ncurses: /usr/bin/clear, tput, reset ve infocmp bu pakette. vim-enhanced ile
 # less yalnız ncurses-libs'i (kütüphane) çekiyor, komutları getirmiyor.
+#
+# dnf-plugins-core: `dnf download` ve `dnf config-manager` bu pakette (Rocky 10
+# dnf-4.20 ile geliyor, dnf5 değil). Build sırasında lab 009'un .rpm varlığını
+# indirmek için gerekiyor; gerçek sunucularda da rutin olarak kurulu.
+#
+# BİLİNÇLİ OLARAK KURULMAYANLAR (lab 009 bunları öğrenciye kurdurur):
+#   lsof, bc, dpkg, epel-release, ed
 RUN dnf -y --allowerasing install \
         man-db man-pages \
         sudo vim-enhanced less which hostname tree file \
-        ncurses \
+        ncurses dnf-plugins-core \
         procps-ng psmisc util-linux findutils diffutils \
         coreutils grep sed gawk \
         passwd shadow-utils \
@@ -34,6 +64,27 @@ RUN dnf -y --allowerasing install \
     && mandb -q \
     && dnf clean all \
     && rm -rf /var/cache/dnf
+
+# Lab 009 varlıkları. Image'a gömülüyor, setup.sh oradan /srv/paketler'e
+# KOPYALIYOR — böylece `labctl reset` öğrencinin bozduğu dosyaları gerçekten
+# eski hâline döndürür ve setup.sh dosya indirmek için network'e çıkmaz.
+#
+# ed: küçük (~80 KB), baseos reposunda, image'da KURULU DEĞİL. Öğrenci onu
+# kurmadan rpm -qlp/-qip ile inceleyecek. Sürüm sabitlenmiyor; check.sh
+# beklenen değerleri dosyanın kendisinden okur, repo güncellemesi kırmaz.
+RUN mkdir -p /opt/lab-assets && \
+    dnf download --destdir=/opt/lab-assets ed && \
+    ! rpm -q ed && \
+    chmod 0644 /opt/lab-assets/*.rpm && \
+    dnf clean all && rm -rf /var/cache/dnf
+# /etc/vimrc'nin kurulum anındaki hâli. Lab 009 setup'ı bu dosyayı bozuyor ve
+# her koşuda önce buradan geri yüklüyor. `dnf reinstall` bu işi YAPAMAZ:
+# /etc/vimrc paket içinde config (c) işaretli, rpm değiştirilmiş bir config
+# dosyasının üzerine yazmaz, yenisini .rpmnew olarak bırakır — setup ikinci
+# kez koşturulduğunda bozma satırı ikinci kez eklenirdi. -p ile mtime de
+# korunuyor, böylece geri yükleme sonrası rpm -V tertemiz dönüyor.
+RUN cp -p /etc/vimrc /opt/lab-assets/vimrc.pristine
+COPY --from=debbuilder /build/ogrenci-arac_1.0_all.deb /opt/lab-assets/
 
 # Saat dilimi host ile aynı olmalı: exitlog ve history damgaları debrief'in
 # ham verisi, UTC ile host arasındaki 3 saatlik kayma onları okunmaz yapıyordu.
