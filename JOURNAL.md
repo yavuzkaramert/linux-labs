@@ -212,3 +212,110 @@ söyledi, kural olarak CONTEXT.md'ye yazılmadı.
 **007a çözülecek.** Ardından `labctl check` GEÇTİ'de basılan debrief history
 çıktısı sohbette analiz edilecek, not PROGRESS.md'ye işlenecek, sonra 007b'ye
 geçilecek. 007b, 007a'nın çözülmüş olduğunu varsayıyor.
+
+## 2026-07-29 — 008 kapandı, 009 yazıldı, bekleme listesi kurumsallaştı
+
+### Yapılanlar
+
+- **007a/007b/008 kayıtları PROGRESS.md'ye işlendi.** 007a ve 007b'nin
+  oturum verisi elde edilemedi (container kapanmış, debrief yapılmadı);
+  sürekliliği bozmamak için tek satırlık işaretle geçildi. 008'in tam
+  debrief notu yazıldı. Öne çıkan bulgular: alias'ın `sudo` ile
+  taşınmaması, `sudo` secure_path'inin `/usr/local/bin` içermemesi,
+  `awk "{print $1}"` içindeki çift tırnağın `$1`'i kabukta genişletmesi.
+- **Lab 009 (paket yönetimi) yazıldı ve doğrulandı.** 6 görev, 16 kriter:
+  `rpm -qf`/`-ql`, `rpm -V` ile bütünlük, `dnf provides`, `dnf history
+  undo`, `.rpm` ve `.deb` dosyalarını KURMADAN inceleme, EPEL + crb.
+  Bozuk ortamda 13 FAIL / 3 OK; üç OK'ın hepsi "yan hasar" korkuluğu
+  (paketlerin kurulu OLMAMASI, kaynak dosyaların değişmemesi) — 008'deki
+  aynı istisna sınıfı. Çözülmüş ortamda 16/16 GEÇTİ.
+- **Dockerfile'a iki lab varlığı eklendi.** Ayrıntı aşağıda.
+
+### Kararlar
+
+**1. `.deb` dosyası ayrı bir builder stage'de sıfırdan üretiliyor.**
+`FROM debian:stable AS debbuilder` içinde `dpkg-deb --build` ile
+`ogrenci-arac_1.0_all.deb` yaratılıp son (Rocky) stage'e `COPY --from` ile
+taşınıyor. Gerekçe: gerçek bir Debian paketi indirmek network bağımlılığı
+ve sürüm belirsizliği getirirdi; burada paket adı, sürümü ve içeriği
+sabit, `check.sh` sürüm sürüklenmesine yakalanmıyor. `Architecture: all`
+olduğu için builder stage'in mimarisi (arm64/amd64) sonucu etkilemiyor.
+
+**2. Lab varlıkları `/opt/lab-assets` altında image'da duruyor,
+`setup.sh` oradan kopyalıyor.** Böylece `labctl reset` öğrencinin bozduğu
+dosyaları gerçekten eski hâline döndürüyor ve setup dosya indirmiyor.
+`.rpm` tarafında `ed` seçildi (~80 KB, baseos, image'da kurulu değil);
+build sırasında `dnf download` ile indiriliyor, bunun için Dockerfile'a
+`dnf-plugins-core` eklendi.
+
+**3. crb deposu ayrı bir kabul kriteri oldu.** Brief'te 15 kriter vardı,
+16'ya çıktı. Sebep tahmin değil ölçüm: Rocky 10'da `dnf install dpkg`
+EPEL açıkken bile `nothing provides libz-ng.so.2` ile düşüyor; `zlib-ng`
+crb (CodeReady Builder) deposunda ve crb varsayılan olarak KAPALI.
+"EPEL etkin" ile "crb etkin" farklı kavramlar, ayrı ölçülüyor. TASK.md
+öğrenciye deponun adını vermiyor, "bağımlılık hatası alırsan eksik olan
+depodur, paket değil" diyor.
+
+**4. `/etc/vimrc` `vim-enhanced`'a değil `vim-common`'a ait.** Brief
+vim-enhanced diyordu, `rpm -qf /etc/vimrc` aksini söyledi. `rpm -V
+vim-enhanced` bu dosya için hiçbir şey basmıyor ve rc 0 dönüyor — yani
+yanlış pakete sorulduğunda "her şey yolunda" görünüyor. Bu tuzak
+solution.md'ye açıkça yazıldı.
+
+**5. Bekleme listesi JOURNAL.md'ye taşındı.** Şimdiye kadar zayıf konular
+PROGRESS.md debrief notlarına ve JOURNAL "Sonraki adım"a dağılmıştı;
+"hangi konu hangi laba serpiştirilecek" sorusunun tek bir adresi yoktu.
+Artık aşağıdaki bölümde tutuluyor, her lab yazımında oradan seçiliyor.
+
+### Doğrulama sırasında çıkan iki kusur (ikisi de düzeltildi)
+
+- **`set -o pipefail` + `rpm -V` tuzağı.** setup.sh'ın kendi kendini
+  doğrulama bloğunda `rpm -V vim-common | grep -q '^..5'` yazılmıştı.
+  `rpm -V` fark bulunca 1 döner; pipefail altında grep eşleşse bile
+  pipeline 1 verir, yani kontrol HER ZAMAN ters sonuç üretiyordu. Çıktı
+  önce değişkene alınıp `case` ile sınanıyor.
+- **`dnf reinstall` config dosyasını geri getirmiyor.** setup.sh ikinci
+  kez koşturulduğunda bozma satırı `/etc/vimrc`'ye iki kez ekleniyordu:
+  dosya pakette config (`c`) işaretli, rpm değiştirilmiş bir config
+  dosyasının üzerine yazmıyor, yenisini `.rpmnew` olarak bırakıyor.
+  Çözüm: kurulum anındaki kopya build sırasında `/opt/lab-assets/
+  vimrc.pristine` olarak saklanıyor, setup her koşuda `cp -p` ile geri
+  yüklüyor (`-p` mtime'ı da koruyor, geri yükleme sonrası `rpm -V`
+  tertemiz dönüyor).
+
+### Bekleme listesi — sonraki lablara serpiştirilecek
+
+009'a GÖMÜLMEDİ; ilgili konu geldiğinde doğal olarak yerleştirilecek.
+
+- **pgrep / pkill** — 005'te hiç kullanılmadı, 006'da da kullanılmadı
+  (svccheck doğrudan vim'de yazıldı). Aday: 011 (journalctl/logging).
+- **sudo refleksi** — 001, 006 ve 008'de tekrarladı: izin sorununu
+  düzeltmek yerine root'a kaçma, kendi home dizininde `sudo vim`.
+- **Birim test disiplini** — 006: scriptler tek başına çalıştırılmadan
+  bileşik akışta denendi, hata bileşikte arandı, döngü uzadı.
+- **sudo secure_path / PATH ilişkisi** — 008: `/usr/local/bin`
+  secure_path'te yok, script sudo altında bulunamadı. Kök sebep
+  deneme-yanılmayla aşıldı, `sudo -l` ile doğrulanmadı.
+- **awk'ta tırnak koruması** — 008: `awk "{print $1}"` içindeki `$1`
+  kabukta genişledi. 004/005/006'daki `-F` alan modeli sorunundan FARKLI
+  bir yüz; alan modeli değil tırnak seçimi problemi.
+
+### Açık kalanlar / bilinen kusurlar
+
+- **`labs/008-links-fhs-archiving/` git'te izlenmiyor, Dockerfile
+  değişiklikleri commit'lenmedi.** `labctl auto_commit` yalnız
+  PROGRESS.md'yi stage ettiği için `lab 008 solved` commit'i lab
+  dosyalarını kapsamadı. 009 dosyaları da aynı durumda. Bilinçli
+  bırakıldı: debrief sonrası Yavuz commit'leyip push edecek.
+- **009 network gerektiriyor.** `setup.sh` bc'yi gerçekten kurup
+  gerçekten kaldırıyor (iki gerçek history işlemi); öğrenci de lsof,
+  epel-release ve dpkg'yi depodan kuruyor. Container ağsız çalıştırılırsa
+  lab kurulamaz. Bu bilinçli: sahte bir history kaydı `dnf history undo`
+  ile geri alınamaz.
+- **`/session` sahiplik uyumsuzluğu (kozmetik).** Önceki girdiden devam.
+- **Apple Silicon / aarch64.** Önceki girdiden devam.
+
+### Sonraki adım
+
+**009 çözülecek.** Ardından debrief → PROGRESS.md → 010 (systemd,
+privileged image geçişi burada).
