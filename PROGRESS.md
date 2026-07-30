@@ -72,4 +72,20 @@
   - zayıf: sudo/PATH ilişkisi (secure_path), awk script'inde
     tırnak seçimi. sağlam: link komutları, tar --exclude,
     doğrulama disiplini
-- 009-package-management solved (2026-07-30)
+- 009-package-management solved (2026-07-29/30)
+  - rpm -V paket adı bekler, dosya yolu için -Vf gerekir — 3 kez
+    yanlış sözdizimiyle denendi (~7 dk), sonra kalıcı öğrenildi
+  - heredoc'ta tırnaklı sınırlayıcı (<< 'EOF') komut ikamesini
+    devre dışı bırakır — fark edilip << EOF'a geçildi, sonraki
+    iki görevde (5, 6) aynı teknik hatasız uygulandı
+  - dnf history: info ile kontrol edip yanlış id'den (5)
+    doğrusuna (8) geçiş — körlemesine denemedi, iyi diagnostik
+  - crb deposu gerekliliği hata mesajından çıkarıldı, repo adı
+    verilmemişti — lab tasarımının hedeflediği tam senaryo
+  - sudo refleksi 4. kez tekrarladı (001, 006, 008, 009): kendi
+    home dizininde sudo vim
+  - tek-harf yazım hataları (tee/tree, rmp/rpm) — hız kaynaklı,
+    kavramsal değil
+  - sağlam: awk '{print $NF}' ile dpkg-deb çıktısından doğru
+    sütun seçimi (004/005/006 dersinin farklı araçta uygulanışı),
+    görev 5'te tek seferde temiz --qf format sorgusu
