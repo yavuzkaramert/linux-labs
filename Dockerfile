@@ -53,6 +53,10 @@ RUN sed -i '/^tsflags=nodocs/d' /etc/dnf/dnf.conf
 # container-systemd` işaretli lablarda entrypoint olarak çağrılır (labctl
 # yapar). Normal lablar hâlâ `sleep infinity` PID 1 ile koşar.
 #
+# chrony: lab 011 için. Saat senkronu görevinde chronyd.service etkinleştirilir
+# ve /etc/chrony.conf düzeltilir. Paket kurulur, servis image'da enabled DEĞİL —
+# setup.sh onu bilinçli olarak durdurulmuş/devre dışı bırakır.
+#
 # BİLİNÇLİ OLARAK KURULMAYANLAR (lab 009 bunları öğrenciye kurdurur):
 #   lsof, bc, dpkg, epel-release, ed
 RUN dnf -y --allowerasing install \
@@ -62,7 +66,7 @@ RUN dnf -y --allowerasing install \
         procps-ng psmisc util-linux findutils diffutils \
         coreutils grep sed gawk \
         passwd shadow-utils \
-        tar gzip bzip2 xz cronie tzdata \
+        tar gzip bzip2 xz cronie chrony tzdata \
         iproute bind-utils curl \
         glibc-langpack-en \
     && dnf -y reinstall '*' \
