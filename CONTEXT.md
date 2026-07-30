@@ -69,6 +69,9 @@ doğrulanır; üçüncü parti kaynaklar eskiyor.
 - `check.sh` — kriter başına [OK]/[FAIL], FAIL varsa exit 1, `set -e` YOK
   (accumulator pattern), kullanıcı-perspektifi testleri `su - student -c` ile,
   negatif testler dahil.
+  - `systemctl show` ile birden çok property sorgulanacaksa HER BİRİ AYRI
+    çağrı olmalı: `-p A -p B --value` çıktı sırası garantili değil, systemd
+    kendi iç sırasında basar. Konumsal okuma sessizce yanlış eşleşir.
 - `hints.md` — 3 seviye: `## Seviye 1` (kavramsal, komut adı yok),
   `## Seviye 2` (komut adları, bayrak yok), `## Seviye 3` (bayrak/parametre).
   Tam komut hiçbir seviyede verilmez.
