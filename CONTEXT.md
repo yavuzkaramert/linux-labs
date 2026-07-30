@@ -66,12 +66,22 @@ doğrulanır; üçüncü parti kaynaklar eskiyor.
   Kural 007'den itibaren geçerlidir; 001-006 geriye dönük düzeltilmez.
 - `setup.sh` — ortamı bozuk kurar; HER kabul kriterini bozar, sıfır bedava OK.
   İlk satırında ortam işareti taşır: `# ENV: container` veya `# ENV: vm`.
+  systemd'nin PID 1 olması gereken lablarda `# ENV: container-systemd`.
+  `labctl` lab dosyalarını container'a YALNIZ `start` sırasında kopyalar;
+  check.sh düzenlendikten sonra `start`/`reset` atılmadan yeni sürüm
+  çalışmaz (lab yazarken `docker cp` ile elle güncellemek gerekir).
 - `check.sh` — kriter başına [OK]/[FAIL], FAIL varsa exit 1, `set -e` YOK
   (accumulator pattern), kullanıcı-perspektifi testleri `su - student -c` ile,
   negatif testler dahil.
   - `systemctl show` ile birden çok property sorgulanacaksa HER BİRİ AYRI
     çağrı olmalı: `-p A -p B --value` çıktı sırası garantili değil, systemd
     kendi iç sırasında basar. Konumsal okuma sessizce yanlış eşleşir.
+  - `NextElapseUSecMonotonic` / `NextElapseUSecRealtime` gibi süre-zaman
+    property'leri `--value` ile HAM mikrosaniye DEĞİL, insan okur biçimde
+    döner: `4d 14h 51min 4.501888s`. Sayı sanıp aritmetiğe sokmak sessizce
+    boş sonuç verir; ayrıştırmadan karşılaştırma yapılamaz.
+  - cron satırı gibi `*` içeren metinler `set -- $line` ile alanlara
+    bölünüyorsa önce `set -f` gerekir; yoksa `*` dosya adlarına genişler.
 - `hints.md` — 3 seviye: `## Seviye 1` (kavramsal, komut adı yok),
   `## Seviye 2` (komut adları, bayrak yok), `## Seviye 3` (bayrak/parametre).
   Tam komut hiçbir seviyede verilmez.
