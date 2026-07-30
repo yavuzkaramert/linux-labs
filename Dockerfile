@@ -48,12 +48,17 @@ RUN sed -i '/^tsflags=nodocs/d' /etc/dnf/dnf.conf
 # dnf-4.20 ile geliyor, dnf5 değil). Build sırasında lab 009'un .rpm varlığını
 # indirmek için gerekiyor; gerçek sunucularda da rutin olarak kurulu.
 #
+# systemd: lab 010 için. Container image'ı systemd'siz gelir (PID 1 sleep).
+# Paket KURULUR ama CMD DEĞİŞMEZ — /usr/sbin/init yalnız `# ENV:
+# container-systemd` işaretli lablarda entrypoint olarak çağrılır (labctl
+# yapar). Normal lablar hâlâ `sleep infinity` PID 1 ile koşar.
+#
 # BİLİNÇLİ OLARAK KURULMAYANLAR (lab 009 bunları öğrenciye kurdurur):
 #   lsof, bc, dpkg, epel-release, ed
 RUN dnf -y --allowerasing install \
         man-db man-pages \
         sudo vim-enhanced less which hostname tree file \
-        ncurses dnf-plugins-core \
+        ncurses dnf-plugins-core systemd \
         procps-ng psmisc util-linux findutils diffutils \
         coreutils grep sed gawk \
         passwd shadow-utils \
