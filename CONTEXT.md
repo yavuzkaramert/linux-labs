@@ -108,8 +108,21 @@ Bu istisnanın bilinen iki kullanımı: (1) systemd günü privileged image,
 
 ## Ortam geçişleri
 
-### systemd (010)
+### systemd (010'dan itibaren)
 Container `--privileged` + systemd-enabled image'a geçirilir.
+
+Ortam işareti üç değerlidir: `container` (varsayılan), `container-systemd`,
+`vm`. `container-systemd` 010 ile tanıtıldı ve 010'dan itibaren geçerlidir;
+010 ve 011 bu etiketi taşır, 001-009 `container` ile kalır — geriye dönük
+düzeltme yok, gerek de yok (o labların hiçbiri PID 1 systemd istemiyor).
+
+Ne zaman `container-systemd`: labın kabul kriterlerinden biri bile systemd'yi
+PID 1 olarak gerektiriyorsa (birim başlatma/enable, systemd timer, crond,
+chronyd, target değiştirme). Salt `--privileged` yetmez — `labctl` bu etiketi
+görünce container'ı `/usr/sbin/init` entrypoint'i, `--cgroupns=host` ve
+`/sys/fs/cgroup` bağlamasıyla açar, ayrıca `is-system-running` hazır olana
+kadar bekler. Etiket yoksa PID 1 `sleep infinity` kalır ve `systemctl`
+çalışmaz.
 
 ### VM (013'ten itibaren)
 Container RHCSA'nın kabaca %60'ını taşır. Şunlar container'da YAPILAMAZ:

@@ -16,6 +16,94 @@ Format: en yeni girdi en üstte.
 
 ---
 
+## 2026-07-31 — 010 debrief'i işlendi, lab 011 yazıldı
+
+### Yapılanlar
+
+- **010-systemd debrief notu PROGRESS.md'ye işlendi.** Öne çıkanlar:
+  privileged image geçişi sorunsuz; `/etc` altında sudo'suz vim denemesi
+  (001/006/008/009'daki "gereksiz sudo" refleksinin tersi — burada sudo
+  gerçekten gerekliydi ve ilk seferde atlandı); `Requires=` yerine
+  `BindsTo=` seçimi (kavram biliniyor ama `RemainAfterExit`'li oneshot
+  serviste hangisinin neden tercih edildiği net değil).
+- **Dockerfile'a `chrony` eklendi.** Lab 011'in saat senkronu görevi
+  `chronyd.service` ve `/etc/chrony.conf` üstüne kurulu; paket image'da
+  yoktu (`cronie` ve `tzdata` vardı). Image yeniden derlendi, 001-010
+  regression sweep'i temiz geçti.
+- **Lab 011 (`labs/011-journalctl-cron-zaman/`) yazıldı ve doğrulandı.**
+  4 görev, 19 kriter: kalıcı journal + `journalctl` ile iki katmanlı
+  teşhis, cron ortam tuzağı, systemd timer çifti, saat dilimi + chronyd.
+  Bozuk ortamda 19/19 FAIL (sıfır bedava OK), çözülmüş ortamda 19/19
+  GEÇTİ. Negatif testler: `PATH=` alternatifi geçiyor, 10 dakikalık timer
+  aralığı kriter 13'ü düşürüyor, enabled-ama-durdurulmuş timer kriter
+  11'i düşürüyor, `/run/systemd/system` altındaki birim kalıcılık
+  kriterini düşürüyor. Solved state üzerine `setup.sh` tekrar koşturuldu
+  ve fresh `reset` denendi — ikisinde de 19/19 FAIL'e dönüyor.
+
+### Kararlar
+
+**1. `container-systemd` ENV etiketi kural olarak yazıya geçirildi.**
+Etiket 010 oturumunda `labctl`'e eklenmişti ama CONTEXT.md'nin "Ortam
+geçişleri" bölümünde adı geçmiyordu; yalnız setup.sh'lerde yaşıyordu.
+Artık üç değerli olduğu (`container` / `container-systemd` / `vm`) ve
+**010'dan itibaren geçerli olduğu** yazılı. 010 ve 011 bu etiketi
+taşıyor, 001-009 `container` ile kalıyor — geriye dönük düzeltmeye gerek
+yok, o labların hiçbiri PID 1 systemd istemiyor. Ölçüt netleştirildi:
+kabul kriterlerinden biri bile systemd'yi PID 1 olarak gerektiriyorsa
+(birim enable/start, timer, crond, chronyd, target) etiket konur. Salt
+`--privileged` yetmez; etiketi gören `labctl` container'ı
+`/usr/sbin/init` entrypoint'i, `--cgroupns=host` ve `/sys/fs/cgroup`
+bağlamasıyla açıyor ve `is-system-running` hazır olana kadar bekliyor.
+Etiket yoksa PID 1 `sleep infinity` kalır, `systemctl` çalışmaz.
+
+**2. "System clock synchronized: yes" kabul kriteri olarak kullanılmadı.**
+Kernel'in NTP-sync bayrağı host'a (Docker Desktop VM) ait; privileged
+container'daki `chronyd` onu `adjtimex` ile çevirirse tüm VM'i etkiler,
+üstelik sonuç dış UDP 123 erişimine bağlı olduğu için check flaky olurdu.
+Yerine beş deterministik kriter kondu: `Timezone`, `/etc/localtime`
+symlink kalıcılığı, `chrony.conf`'ta geçerli `pool`/`server` satırı,
+`chronyd` active+enabled, `timedatectl` `NTP=yes`. `chronyc tracking`
+TASK'ta teşhis yolu olarak anılıyor ama ölçülmüyor.
+
+**3. Zamanlanmış iş doğrulaması gerçek tetiklenmeye dayanıyor.**
+Yapılandırma denetimi "iş çalıştı" demez. `check.sh` iki log dosyasını
+TEK ortak döngüde, paralel bekliyor (üst sınır 90s); dosyalar zaten
+varsa anında geçiyor, yani tipik koşu hızlı.
+
+### İki tuzak (CONTEXT.md'ye işlendi)
+
+- **`systemctl show ... NextElapseUSecMonotonic --value` ham mikrosaniye
+  DÖNDÜRMÜYOR.** Biçimlendirilmiş süre string'i geliyor:
+  `4d 14h 51min 4.501888s`. Sayı sanıp aritmetiğe sokmak sessizce boş
+  sonuç veriyor — kriter 13 ilk turda tam da bu yüzden FAIL etti.
+  Ayrıştırmadan karşılaştırma yapılamaz. Aynı sınıf: 010'daki
+  `systemctl show -p A -p B` çıktı sırası sorunu.
+- **`set -- $cron_line` tırnaksız kullanımı `*` alanlarını glob'a
+  açıyor.** cron zamanlama alanları dosya adlarına genişliyor ve hata
+  mesajı `zamanlama alanı 'afs'`, `'bin'`, `'boot'` diye anlamsızlaşıyor.
+  Alanlara bölmeden önce `set -f` şart.
+
+### Açık kalanlar
+
+- **`labctl` lab dosyalarını container'a yalnız `start` sırasında
+  kopyalıyor.** Lab yazarken `check.sh` düzenlendikten sonra `start`/
+  `reset` atılmazsa eski sürüm çalışmaya devam ediyor — bir tur boşa
+  gitti. Geçici çözüm `docker cp`; CONTEXT.md'ye not düşüldü, davranış
+  değiştirilmedi.
+- **Container saati host'tan ~4 saat ileri** (Docker Desktop VM clock
+  skew). Lab içi tutarlı olduğu için kriterleri etkilemiyor, ama debrief
+  zaman damgaları host ile karşılaştırılırken akılda tutulmalı.
+- **`student` `systemd-journal` grubunda değil**: `journalctl` sudo'suz
+  çalışınca çıkış kodu 0 dönüp boş çıktı veriyor. Bilinçli bırakıldı,
+  gerçek sunucu davranışı; solution.md'de ve hints Seviye 2'de yazılı.
+
+### Sonraki adım
+
+**Lab 011 çözülecek.** Ardından debrief → PROGRESS.md → 012. 013'ten
+itibaren ortam VM'e taşınıyor.
+
+---
+
 ## 2026-07-30 — labctl'e systemd desteği, lab 010
 
 ### Yapılanlar
