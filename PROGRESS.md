@@ -89,3 +89,4 @@
   - sağlam: awk '{print $NF}' ile dpkg-deb çıktısından doğru
     sütun seçimi (004/005/006 dersinin farklı araçta uygulanışı),
     görev 5'te tek seferde temiz --qf format sorgusu
+- 010-systemd solved (2026-07-31)
