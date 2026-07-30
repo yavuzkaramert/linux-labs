@@ -90,3 +90,23 @@
     sütun seçimi (004/005/006 dersinin farklı araçta uygulanışı),
     görev 5'te tek seferde temiz --qf format sorgusu
 - 010-systemd solved (2026-07-31)
+  - privileged image geçişi ilk kez kullanıldı, sorunsuz
+  - gorevci: /etc altında sudo'suz vim önce denendi, yazamayınca
+    sudo'ya geçildi — 001/006/008/009'daki "gereksiz sudo"
+    refleksinin tersi, burada sudo gerçekten gerekliydi ve ilk
+    seferde atlandı
+  - raporcu: düzenlemeden önce status + unit dosyası + gerçek
+    script cat'lendi (iyi diagnostik alışkanlık). Task'ın kasıtlı
+    iki-gizli-hata tuzağıyla birebir uyan 2 edit-check döngüsü,
+    gecikme değil, tasarımın kendisi
+  - api+veritabani (sıralama+gereklilik): en çok iterasyon burada
+    (api 4 edit). Requires= yerine BindsTo= denendi ("garanti
+    olsun" diye daha güçlü coupling seçildi), check Requires
+    bekleyince düzeltildi. Kavramsal anlayış sağlam (BindsTo'nun
+    ne yaptığını biliyor) ama RemainAfterExit'li tek-seferlik
+    servislerde Requires'ın BindsTo'ya neden tercih edildiği
+    (lifecycle coupling farkı) net değil
+  - default target: tek denemede doğru
+  - zayıf: dependency directive ayrımı (Requires/BindsTo/Wants ne
+    zaman hangisi). sağlam: edit-öncesi diagnostik (status+cat),
+    enable/start/daemon-reload sırası, target değiştirme
