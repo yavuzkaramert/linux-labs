@@ -16,6 +16,183 @@ Format: en yeni girdi en üstte.
 
 ---
 
+## 2026-07-30 — labctl'e systemd desteği, lab 010
+
+### Yapılanlar
+
+**labctl'in ilk yapısal değişikliği yapıldı.** CONTEXT.md'de "tooling
+donduruldu" kuralının önceden onaylanmış iki istisnasından birincisi
+(systemd günü privileged image) kullanıldı. Değişiklik tasarlanmadan
+önce ortam fiilen ölçüldü.
+
+**Lab 010 (systemd) yazıldı ve uçtan uca doğrulandı.** 4 görev,
+11 kabul kriteri, 11/11 GEÇTİ, `labctl reset` sonrası 11/11 FAIL.
+
+### Kararlar
+
+**1. OrbStack privileged + systemd PID 1 GERÇEKTEN çalışıyor —
+ölçüldü, varsayılmadı.** Deneme container'ında sınananlar ve sonuçlar:
+
+| Kapı | Sonuç |
+|---|---|
+| systemd boot | ~2 sn, `is-system-running` = running, failed unit yok |
+| PID 1 | `systemd` |
+| cgroup v2 | `cpuset cpu io memory pids`, yazılabilir |
+| unit start / enable | çalışıyor, symlink kuruluyor |
+| `Type=oneshot` + `RemainAfterExit` | `active (exited)` üretiliyor |
+| `set-default` | çalışıyor |
+| `docker exec` + `su - student` | çalışıyor, `sudo systemctl` rc=0 |
+
+Gereken flag seti kullanıcının verdiğiyle birebir aynı çıktı:
+`--privileged --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw` +
+`/usr/sbin/init` entrypoint. Fazladan hiçbir şey (tmpfs mount, unit
+maskeleme, `SYS_ADMIN` ince ayarı) gerekmedi.
+
+**2. systemd image'da YOKTU, Dockerfile'a eklendi.**
+`rpm -q systemd` → "not installed", `/usr/sbin/init` yok. Rocky
+container image'ı systemd'siz geliyor. Paket kuruldu ama
+**`CMD ["sleep","infinity"]` DEĞİŞMEDİ** — `/usr/sbin/init` yalnız
+010'da entrypoint olarak çağrılıyor. Image tek ve paylaşılan olduğu
+için bu ayrım kritik; normal lablar systemd'yi sadece diskte taşır,
+PID 1 olarak koşturmaz.
+
+**3. Ortam işareti mevcut `# ENV:` alanına bindirildi.** CONTEXT.md
+zaten setup.sh'ın ilk satırında `# ENV: container|vm` istiyordu; üçüncü
+değer `container-systemd` eklendi. Yeni bir metadata mekanizması
+yazılmadı. `lab_env()` işareti okunamazsa `container` döner, yani
+001-009 hiç dokunulmadan eski davranışını sürdürür.
+
+**4. labctl'e eklenen toplam yüzey: 2 fonksiyon + 1 if.**
+- `lab_env()` — setup.sh ilk 3 satırından işareti okur.
+- `wait_systemd()` — `is-system-running` `running|degraded` verene dek
+  30 sn poll eder. `degraded` bilerek kabul ediliyor: setup.sh kasten
+  bozuk servis bırakıyor, `running` beklenirse her koşuda zaman aşımı
+  olurdu.
+- `cmd_start()` içinde tek `if`: docker run argümanları diziye alındı,
+  systemd dalı ayrı dizi kullanıyor. **`container` yolundaki argüman
+  listesi bugünküyle birebir aynı** — regresyon riski buradan
+  kapatıldı. `cmd_shell`/`cmd_check`/`cmd_hint`/`cmd_solution` hiç
+  değişmedi; `docker exec` PID 1'in ne olduğuna bakmıyor.
+
+CONTEXT.md korkuluğuna sadık kalındı: genel bir "ortam eklenti
+sistemi" yazılmadı, tek if/else.
+
+**5. Lab 010'un kapsamı journalctl ve timer'ı DIŞARIDA bıraktı.**
+İkisi de 011'in konusu (journalctl + logging + cron/systemd timer).
+010 yalnız unit yazımı, enable/disable, teşhis, After/Requires ve
+varsayılan target'ta kalıyor. `journalctl -u` hints seviye 2'de teşhis
+aracı olarak geçiyor ama kriterlerin hiçbiri onu ölçmüyor.
+
+### 010 tasarım notları
+
+**Görev 2'nin hata sırası ölçüldü, varsayılmadı.** `raporcu.service`
+iki bağımsız hata taşıyor (yok olan `User=`, yanlış `ExecStart`).
+Ölçüm: systemd önce `217/USER` veriyor ve `203/EXEC`'i TAMAMEN
+maskeliyor — kullanıcı düzeltilmeden yol hatası hiç görünmüyor.
+Bu tesadüfi değil, systemd süreci başlatırken önce kullanıcıya geçiyor.
+TASK.md ve hints.md bu gerçek davranışa göre yazıldı ("biri diğerini
+gizliyor, ilkini düzeltmeden ikincisi görünmez"). Katmanlı teşhis
+labın en değerli parçası oldu.
+
+**Kalıcılık kriteri bedava geçmiyor.** 008 ve 009'da "kaynak dosyalar
+değişmemiş" korkuluk kriteri başlangıçta doğal olarak OK veriyordu ve
+istisna olarak belgelenmişti. 010'da bu istisnaya gerek kalmadı:
+kriter dört birimin de `FragmentPath`'ini istiyor, `gorevci.service`
+başlangıçta hiç olmadığı için FragmentPath boş dönüyor ve kriter de
+FAIL veriyor. Bozuk başlangıç **11/11 FAIL**.
+
+**Durum systemd'ye soruluyor, dosyadan okunmuyor.** check.sh baştan
+sona `systemctl show -p <özellik> --value` kullanıyor. Bunun somut
+karşılığı `NeedDaemonReload` kriteri: öğrenci unit dosyasını düzeltip
+`daemon-reload` yapmazsa dosya doğru görünür ama sistem eski tanımı
+taşır. Fiilen sınandı — reload'suz durumda servis `failed` kalıyor ve
+`NeedDaemonReload=yes` dönüyor.
+
+**`systemctl show -p A -p B --value` argüman sırasını KORUMUYOR.**
+Çıktı systemd'nin kendi sırasında geliyor. check.sh bu yüzden her
+özelliği tek tek soruyor; toplu sorup sırayla okumak sessizce yanlış
+eşleşme üretirdi. Ölçülen örnek — istenen sıra
+`MainPID, SubState, Type, ExecStart`, gelen sıra
+`Type, MainPID, ExecStart, SubState`; konumsal okuma `MainPID=oneshot`,
+`SubState=0` verirdi.
+
+### Bilinen davranış: get-default neden graphical.target
+
+`systemd` kurulumundan sonra `systemctl get-default` `graphical.target`
+dönüyor. Kaynağı ölçüldü (temiz container'da), GUI sızıntısı DEĞİL:
+
+- `/etc/systemd/system/default.target` **yok** — yerel bir override
+  kurulmamış.
+- `/usr/lib/systemd/system/default.target` → `graphical.target`
+  sembolik bağı, sahibi `systemd-257-23.el10_2.2.rocky.0.1`.
+  Yani upstream systemd paketinin kendi varsayılanı.
+- `rpm -qa | grep -iE 'gdm|gnome|display-manager|xorg|wayland|plasma|kde'`
+  → hiçbiri kurulu değil. `display-manager.service` diye bir birim yok;
+  `graphical.target` onu yalnız `Wants` ediyor, zorunlu tutmuyor.
+- Preset dosyalarının sahibi `rocky-release` (zaten base image'da vardı)
+  ve `systemd`. `85-display-manager.preset` içindeki `enable gdm.service`
+  satırları atıl — o birimler sistemde yok. Ayrıca preset'ler birim
+  enable/disable'ını yönetir, varsayılan target'ı belirlemez.
+- Dockerfile satırı düz paket adı: `... ncurses dnf-plugins-core systemd`.
+  `@minimal-environment` / `@server-product` gibi bir grup çekilmiyor.
+  Kurulu toplam paket: 193.
+
+Sonuç: Dockerfile daraltılmadı, image'a dokunulmadı. Bu davranış lab
+010 görev 4'ün konusu zaten (`set-default multi-user.target`), yani
+labın öğrettiği gerçek RHEL davranışıyla birebir örtüşüyor. CONTEXT.md'
+nin "LPIC Topic 106 (X11/masaüstü) ALINMAYACAK" kuralıyla çelişki yok.
+
+### Doğrulama sırasında çıkan iki kusur
+
+- **bash 3.2 + boş dizi + `set -u`.** macOS'ta `/usr/bin/env bash`
+  3.2.57 veriyor; orada boş bir dizinin `"${arr[@]}"` genişlemesi
+  "unbound variable" hatası. `docker run` komut dizisi normal
+  lablarda boş olduğu için labctl her lab'da patlardı.
+  `${run_cmd[@]+"${run_cmd[@]}"}` koruması eklendi.
+- **İlk kalıcılık negatif testi geçersizdi.** Birim `/etc`'den
+  `/run`'a KOPYALANDIĞINDA kriter OK vermeye devam etti — çünkü
+  `/etc/systemd/system` `/run/systemd/system`'den önceliklidir ve
+  systemd hâlâ `/etc`'deki dosyayı okuyordu. Test taşımaya (`mv`)
+  çevrilince kriter beklendiği gibi FAIL verdi. Bu öncelik kuralı
+  solution.md'ye tuzak olarak eklendi.
+
+### Regresyon
+
+Image systemd ile yeniden kuruldu, labctl değişti; 001-009 tek tek
+`start` + `check --no-commit` ile koşuldu.
+
+| Lab | start | OK / FAIL | Sonuç |
+|---|---|---|---|
+| 001 | OK | 2 / 4 | KALDI |
+| 002 | OK | 0 / 8 | KALDI |
+| 003 | OK | 0 / 6 | KALDI |
+| 004 | OK | 0 / 7 | KALDI |
+| 005 | OK | 0 / 5 | KALDI |
+| 006 | OK | 0 / 12 | KALDI |
+| 007a | OK | 1 / 12 | KALDI |
+| 007b | OK | 1 / 18 | KALDI |
+| 008 | OK | 1 / 10 | KALDI |
+| 009 | OK | 3 / 13 | KALDI |
+
+Hepsi çözülmemiş ortamda KALDI — doğru sonuç. 009'un 3 OK / 13 FAIL
+dağılımı değişiklik öncesi kayıtla birebir aynı. PID 1 karşılaştırması
+da doğrulandı: `lab-009` → `sleep`, privileged=false;
+`lab-010` → `systemd`, privileged=true.
+
+### Bekleme listesine eklenenler
+
+Aşağıdaki "Bekleme listesi" bölümüne üç madde eklendi (010'a
+GÖMÜLMEDİ): sudo refleksi 4. tekrarıyla güncellendi, tek-harf yazım
+hataları ve rpm/dpkg bayrak modeli yeni girdiler.
+
+### Sonraki adım
+
+011 — journalctl + logging + cron/systemd timer + saat senkronu.
+Ortam işareti yine `container-systemd` olacak (journalctl systemd
+gerektiriyor); labctl tarafında ek iş yok.
+
+---
+
 ## 2026-07-27 — Müfredat sıfırlandı, Rocky'ye geçildi
 
 ### Yapılanlar
@@ -289,8 +466,10 @@ Artık aşağıdaki bölümde tutuluyor, her lab yazımında oradan seçiliyor.
 
 - **pgrep / pkill** — 005'te hiç kullanılmadı, 006'da da kullanılmadı
   (svccheck doğrudan vim'de yazıldı). Aday: 011 (journalctl/logging).
-- **sudo refleksi** — 001, 006 ve 008'de tekrarladı: izin sorununu
-  düzeltmek yerine root'a kaçma, kendi home dizininde `sudo vim`.
+- **sudo refleksi** — 001, 006, 008 ve 009'da tekrarladı: **4. tekrar**.
+  İzin sorununu düzeltmek yerine root'a kaçma, kendi home dizininde
+  `sudo vim`. Artık tesadüf değil, yerleşmiş bir alışkanlık; bilinçli
+  bir görevle kırılması gerekiyor.
 - **Birim test disiplini** — 006: scriptler tek başına çalıştırılmadan
   bileşik akışta denendi, hata bileşikte arandı, döngü uzadı.
 - **sudo secure_path / PATH ilişkisi** — 008: `/usr/local/bin`
@@ -299,6 +478,15 @@ Artık aşağıdaki bölümde tutuluyor, her lab yazımında oradan seçiliyor.
 - **awk'ta tırnak koruması** — 008: `awk "{print $1}"` içindeki `$1`
   kabukta genişledi. 004/005/006'daki `-F` alan modeli sorunundan FARKLI
   bir yüz; alan modeli değil tırnak seçimi problemi.
+- **Tek-harf yazım hataları** — 009: `tee`/`tree`, `rmp`/`rpm`;
+  008: Türkçe dotless `ı` ile `ls -ı`. Hız kaynaklı, kavramsal değil.
+  Ayrı bir lab konusu değil; debrief'te izlenmeye devam edilecek,
+  tekrar ederse yazma hızının maliyeti konuşulacak.
+- **rpm/dpkg bayrak modeli** — 009: `rpm -V` PAKET adı bekler, dosya
+  yolu için `-Vf` gerekir; 3 kez yanlış sözdizimiyle denendi (~7 dk).
+  Aynı model `-q` / `-qf` / `-qp` ailesinde de geçerli: ikinci harf
+  sorunun neye sorulduğunu belirliyor. Aday: paket yönetimi tekrar
+  ettiğinde (Faz C, container/image konusu).
 
 ### Açık kalanlar / bilinen kusurlar
 
