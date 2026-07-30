@@ -25,6 +25,9 @@ Commands:
   reset <id>       Same as start — rebuild the lab from scratch
   hint <id> [1-3]  Show a hint at the given level (default: 1)
   solution <id>    Show the lab's solution
+
+A lab marked "# ENV: container-systemd" on the first lines of its setup.sh
+starts privileged with systemd as PID 1. Every other lab is unaffected.
 EOF
     exit 1
 }
@@ -50,6 +53,35 @@ resolve_lab() {
     fi
     LAB_ID="$(basename "$LAB_DIR")"
     CONTAINER="lab-$LAB_ID"
+}
+
+# The environment marker a lab declares on the first lines of its setup.sh:
+# "container" (default) or "container-systemd". Labs 001-009 predate the
+# second value; a missing or unreadable marker means "container", so nothing
+# about their startup changes.
+lab_env() {
+    local marker
+    marker="$(sed -n '1,3s/^# ENV:[[:space:]]*//p' "$LAB_DIR/setup.sh" 2>/dev/null | head -1)"
+    case "$marker" in
+        container-systemd) echo "container-systemd" ;;
+        *)                 echo "container" ;;
+    esac
+}
+
+# systemd needs a moment to reach a usable state. Without this wait, setup.sh
+# would fire systemctl calls at a half-booted PID 1 and fail at random.
+# "degraded" counts as ready: a lab whose setup deliberately leaves a service
+# broken is exactly that, and waiting for "running" would time out.
+wait_systemd() {
+    local i state
+    for i in $(seq 1 30); do
+        state="$(docker exec "$CONTAINER" systemctl is-system-running 2>/dev/null || true)"
+        case "$state" in
+            running|degraded) return 0 ;;
+        esac
+        sleep 1
+    done
+    die "systemd did not come up in $CONTAINER (last state: ${state:-none})"
 }
 
 ensure_image() {
@@ -88,8 +120,28 @@ cmd_start() {
     # SYS_NICE is not in Docker's default capability set. Without it a setup.sh
     # that lowers a process's nice value fails silently (warning on stderr,
     # exit 0), so lab 005 would hand out its nice criterion for free.
-    docker run -d --name "$CONTAINER" --cap-add SYS_NICE \
-        -v "$session_dir:/session" "$IMAGE" >/dev/null
+    local env_kind
+    env_kind="$(lab_env)"
+    local -a run_args=(-d --name "$CONTAINER" --cap-add SYS_NICE
+                       -v "$session_dir:/session")
+    local -a run_cmd=()
+    # Lab 010 teaches systemd, which cannot be taught under a "sleep infinity"
+    # PID 1. The privileged/cgroup flags below were measured against OrbStack,
+    # not assumed. Deliberately a single if — CONTEXT.md forbids growing a
+    # general environment plugin system out of this.
+    if [ "$env_kind" = "container-systemd" ]; then
+        run_args=(-d --name "$CONTAINER" --privileged --cgroupns=host
+                  -v /sys/fs/cgroup:/sys/fs/cgroup:rw
+                  -v "$session_dir:/session")
+        run_cmd=(/usr/sbin/init)
+    fi
+    # ${arr[@]+"${arr[@]}"}: macOS ships bash 3.2, where an empty array under
+    # `set -u` is an unbound variable. The guard keeps the non-systemd command
+    # line byte-for-byte identical to what it has always been.
+    docker run "${run_args[@]}" "$IMAGE" ${run_cmd[@]+"${run_cmd[@]}"} >/dev/null
+    if [ "$env_kind" = "container-systemd" ]; then
+        wait_systemd
+    fi
     # The bind mount hides the image's /session, so re-assert student can write.
     docker exec -u root "$CONTAINER" \
         sh -c 'chown student:student /session 2>/dev/null || chmod 0777 /session'
