@@ -72,3 +72,4 @@
   - zayıf: sudo/PATH ilişkisi (secure_path), awk script'inde
     tırnak seçimi. sağlam: link komutları, tar --exclude,
     doğrulama disiplini
+- 009-package-management solved (2026-07-30)
