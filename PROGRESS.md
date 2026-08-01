@@ -110,3 +110,4 @@
   - zayıf: dependency directive ayrımı (Requires/BindsTo/Wants ne
     zaman hangisi). sağlam: edit-öncesi diagnostik (status+cat),
     enable/start/daemon-reload sırası, target değiştirme
+- 011-journalctl-cron-zaman solved (2026-08-02)
