@@ -57,6 +57,12 @@ RUN sed -i '/^tsflags=nodocs/d' /etc/dnf/dnf.conf
 # ve /etc/chrony.conf düzeltilir. Paket kurulur, servis image'da enabled DEĞİL —
 # setup.sh onu bilinçli olarak durdurulmuş/devre dışı bırakır.
 #
+# openssh-server + openssh-clients + gnupg2: lab 012 için. sshd birim olarak
+# koşar (container-systemd), öğrenci anahtarla girişi kurar ve sshd_config'i
+# sertleştirir; host anahtarları image'da ÜRETİLMEZ, setup.sh `ssh-keygen -A`
+# ile üretir — böylece `labctl reset` tertemiz bir sunucu verir. gnupg2
+# şifreleme ve imza doğrulama görevlerinin aracı.
+#
 # BİLİNÇLİ OLARAK KURULMAYANLAR (lab 009 bunları öğrenciye kurdurur):
 #   lsof, bc, dpkg, epel-release, ed
 RUN dnf -y --allowerasing install \
@@ -68,6 +74,7 @@ RUN dnf -y --allowerasing install \
         passwd shadow-utils \
         tar gzip bzip2 xz cronie chrony tzdata \
         iproute bind-utils curl \
+        openssh-server openssh-clients gnupg2 \
         glibc-langpack-en \
     && dnf -y reinstall '*' \
     && mandb -q \
@@ -94,6 +101,45 @@ RUN mkdir -p /opt/lab-assets && \
 # korunuyor, böylece geri yükleme sonrası rpm -V tertemiz dönüyor.
 RUN cp -p /etc/vimrc /opt/lab-assets/vimrc.pristine
 COPY --from=debbuilder /build/ogrenci-arac_1.0_all.deb /opt/lab-assets/
+
+# Lab 012 varlıkları. Yayıncı GPG anahtar çifti BUILD sırasında üretilir, iki
+# paket imzalanır, sonra GİZLİ ANAHTAR SİLİNİR — image'da yalnız açık anahtar,
+# iki arşiv ve iki imza kalır. Öğrenci gizli anahtara ulaşamaz, imzayı yeniden
+# üretemez; tek geçerli yol doğru açık anahtarı içe aktarıp doğrulamaktır.
+#
+# surum-b imzalandıktan SONRA yeniden üretilir: dosya hâlâ geçerli bir .tar.gz
+# ama içeriği imzanın atıldığı andaki bayt dizisi değil, bu yüzden gpg --verify
+# BAD signature verir. Kurcalanmış paketin gerçek karşılığı budur.
+#
+# Build sırasında iki doğrulama yapılır (a geçmeli, b geçmemeli); biri tutmazsa
+# build çöker ve bozuk varlık image'a girmez.
+RUN set -eux; \
+    export GNUPGHOME=/tmp/labgpg; \
+    mkdir -m 0700 -p "$GNUPGHOME"; \
+    mkdir -p /opt/lab-assets/paket /tmp/pkgsrc/surum-a /tmp/pkgsrc/surum-b; \
+    gpg --batch --pinentry-mode loopback --passphrase '' \
+        --quick-generate-key 'Lab Yayinci <yayinci@lab.local>' default default never; \
+    printf 'surum a govdesi\n' > /tmp/pkgsrc/surum-a/icerik.txt; \
+    printf 'surum b govdesi\n' > /tmp/pkgsrc/surum-b/icerik.txt; \
+    tar czf /opt/lab-assets/paket/surum-a.tar.gz -C /tmp/pkgsrc surum-a; \
+    tar czf /opt/lab-assets/paket/surum-b.tar.gz -C /tmp/pkgsrc surum-b; \
+    gpg --batch --yes --detach-sign \
+        -o /opt/lab-assets/paket/surum-a.tar.gz.sig \
+        /opt/lab-assets/paket/surum-a.tar.gz; \
+    gpg --batch --yes --detach-sign \
+        -o /opt/lab-assets/paket/surum-b.tar.gz.sig \
+        /opt/lab-assets/paket/surum-b.tar.gz; \
+    printf 'arka kapi\n' >> /tmp/pkgsrc/surum-b/icerik.txt; \
+    tar czf /opt/lab-assets/paket/surum-b.tar.gz -C /tmp/pkgsrc surum-b; \
+    gpg --batch --yes --armor --export 'yayinci@lab.local' \
+        > /opt/lab-assets/paket/yayinci-acik.asc; \
+    gpg --batch --verify /opt/lab-assets/paket/surum-a.tar.gz.sig \
+        /opt/lab-assets/paket/surum-a.tar.gz; \
+    ! gpg --batch --verify /opt/lab-assets/paket/surum-b.tar.gz.sig \
+        /opt/lab-assets/paket/surum-b.tar.gz; \
+    gpgconf --kill all || true; \
+    rm -rf "$GNUPGHOME" /tmp/pkgsrc; \
+    chmod 0644 /opt/lab-assets/paket/*
 
 # Saat dilimi host ile aynı olmalı: exitlog ve history damgaları debrief'in
 # ham verisi, UTC ile host arasındaki 3 saatlik kayma onları okunmaz yapıyordu.
