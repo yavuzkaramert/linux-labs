@@ -181,9 +181,9 @@ auto_commit() {
 }
 
 # Debrief girdisi: oturumun komut geçmişi, zaman damgalı.
-# Pencere DEBRIEF_HOURS ile ayarlanır (varsayılan 24 saat).
+# Pencere DEBRIEF_HOURS ile ayarlanır (varsayılan 72 saat).
 debrief_history() {
-    local h="${DEBRIEF_HOURS:-24}"
+    local h="${DEBRIEF_HOURS:-72}"
     echo ""
     echo "--- debrief history (son ${h} saat) ---"
     docker exec "$CONTAINER" bash -lc '
