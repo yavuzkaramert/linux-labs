@@ -111,3 +111,26 @@
     zaman hangisi). sağlam: edit-öncesi diagnostik (status+cat),
     enable/start/daemon-reload sırası, target değiştirme
 - 011-journalctl-cron-zaman solved (2026-08-02)
+  - iş 3 oturuma yayıldı (31 Tem 02:13 başlangıç, ~28 saatlik bir
+    ara, 2 Ağu 02:25 bitiş) — "son 24 saat" debriefi ilk oturumu
+    kesti, DEBRIEF_HOURS 72'ye çekildi (bu lab'dan itibaren)
+  - bekci (kalıcı journal + 2 katmanlı teşhis): journald.conf
+    Storage=, mkdir /var/log/journal, systemd-tmpfiles --create
+    --prefix, journalctl --flush zincirini tek seferde doğru
+    sırayla kurdu — sağlam. journalctl önem-aralığı sentaksında
+    (emerg..err) birkaç yazım hatası, -r/-p sırası denemeyle
+    bulundu. Kök neden (uygulamanın kendi config dosyası eksik,
+    /etc/bekci/lisans.key) bulununcaya kadar service dosyası da
+    iki kez düzenlendi — hangi düzenlemenin gerekli, hangisinin
+    arayış olduğu netleşmedi
+  - yedek (cron, PATH tuzağı): tek denemede doğru
+  - temizlik (systemd timer sıfırdan): en çok debug edilen görev,
+    7 vim çağrısı (~20 dk) — hangi kısmın (OnCalendar/Unit=/
+    AccuracySec) asıl sürtünme kaynağı olduğu netleşmedi
+  - saat (timedatectl+chrony): temiz, iki ufak typo anında kendi
+    kendine düzeltildi
+  - genel: kendi notu — spesifik bir konuya değil, yeni
+    materyalin genelinde eşit sürtünmeye işaret ediyor
+  - zayıf: timer unit yazımı (yeni konu), journalctl önem-aralığı
+    sentaksı. sağlam: kalıcı journal kurulumu, cron PATH tuzağı,
+    chrony
