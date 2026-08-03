@@ -134,3 +134,4 @@
   - zayıf: timer unit yazımı (yeni konu), journalctl önem-aralığı
     sentaksı. sağlam: kalıcı journal kurulumu, cron PATH tuzağı,
     chrony
+- 012-ssh-gpg solved (2026-08-03)
