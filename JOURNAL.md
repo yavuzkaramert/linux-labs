@@ -595,3 +595,48 @@ Artık aşağıdaki bölümde tutuluyor, her lab yazımında oradan seçiliyor.
 
 **009 çözülecek.** Ardından debrief → PROGRESS.md → 010 (systemd,
 privileged image geçişi burada).
+
+## 2026-08-05 — Gün 1 (900-vardiya-01a/01b) yazıldı, Genel Tekrar İzi kuruldu
+
+### Yapılanlar
+
+- 001-012'nin tamamını kapsayan genel tekrar senaryosu tasarlandı,
+  Claude Code'a brief olarak verildi: labs/900-vardiya-01a (ticket
+  1-6, container) ve labs/900-vardiya-01b (ticket 7-13,
+  container-systemd).
+- İki lab da 5 dosya kuralına uydu. Toplam 145 kriter (41+104),
+  container içinde taze 0/41 ve 0/104'ten 41/41 ve 104/104'e
+  çözülerek doğrulandı, sonra reset ile taze hale getirildi (Yavuz
+  henüz kendi çözümünü yapmadı).
+- Bu iz için üç kalıcı format sapması kabul edildi: hints.md yalnız
+  Seviye 1, check.sh çıktısında kaynak lab etiketi, solution.md tam
+  çözüm değil kaynak-haritası.
+- "Gün N" adlandırması kuruldu ("Vardiya N" yerine); CONTEXT.md'ye
+  "Genel Tekrar Günleri" bölümü eklendi.
+
+### Kararlar
+
+- Gün 1'in orijinal labların hikaye/verisini neredeyse birebir
+  uyarlaması ilk tekrar için kabul edilebilir bulundu, ama bilinçli
+  olarak tek seferlik: Gün 2'den itibaren her gün tamamen yeni bir
+  iş senaryosu kullanacak.
+- Dizin adlandırması: Gün 1 tarihsel nedenle 900-vardiya-01a/01b
+  adını korur. Gün 2'den itibaren labs/90N-gun-0Nx/, her günün kendi
+  3 haneli öneki var.
+- 01a Ticket 2'ye setup sırasında fark edilen bir boşluk düzeltildi:
+  /srv/proje 2770 root:developers olunca student group üyeliği
+  olmadan hiçbir şey göremiyordu — kriter eklendi.
+- 01b, ticket 11/12/13 systemd/cron/timer/chrony gerektirdiği için
+  container-systemd ortamında açıldı (mevcut üç değerli ortam
+  etiketine uygun, yeni kural değil).
+
+### Açık kalanlar / bilinen kusurlar
+
+- Yavuz henüz kendi çözümünü yapmadı; debrief bu yüzden bekliyor.
+
+### Sonraki adım
+
+Gün 1 commit+push edildi. Yavuz Gün 1'i (01a+01b) çözecek, debrief
+yapılacak, PROGRESS.md'ye işlenecek. Ardından yeni bir sohbette Gün 2
+tasarlanacak — CONTEXT.md'deki "Genel Tekrar Günleri" bölümü ve Gün
+1'in kararları (yeni senaryo zorunluluğu) başlangıç noktası olacak.

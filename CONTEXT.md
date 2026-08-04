@@ -273,6 +273,48 @@ bir şey işletilmesi önerildi. Lab "verilen problemi çöz"dür; gerçek siste
 Zayıf konular sonraki lablara doğal serpiştirilir (örn. awk 005'te ps|awk
 olarak geri geldi; sed config-düzenleme görevlerinde tekrar eder).
 
+## Genel Tekrar Günleri (Gün N)
+
+Ana müfredata (001-012, sonrası Faz B/C) paralel, ayrı bir tekrar izi.
+Amaç ezber değil, aşinalığı taze tutmak — bilgi birikince öğrenilenler
+hızla soğur, bu iz onu önler. Ana müfredatla numaralandırması ayrıdır,
+karışmaz.
+
+Dizin: labs/90N-gun-0Nx/ (N = gün numarası, x = a/b — gün ikiye
+bölünür, a/b sabah-öğleden sonra gibi gevşek bir çerçeve, zorunlu
+değil). Gün 1 tarihsel nedenle labs/900-vardiya-01a/ ve
+labs/900-vardiya-01b/ adını taşıyor ("vardiya" terimi o an
+kullanılıyordu, yeniden adlandırılmadı). Gün 2'den itibaren
+labs/901-gun-02a/, labs/901-gun-02b/ şeklinde devam eder; her günün
+kendi 3 haneli öneki vardır (901, 902, ...) — aksi halde labctl'in
+"ambiguous" eşleştirmesi gün sayısı arttıkça yönetilemez hale gelir.
+
+5 dosya kuralı ve genel format aynen geçerlidir, ancak bu iz için üç
+kalıcı format sapması vardır:
+- hints.md yalnız Seviye 1 (kavramsal) içerir; Seviye 2/3 yerine
+  "bu konuyu lab NNN'de gördün" referansı.
+- check.sh çıktısında her satırda kaynak lab etiketi bulunur:
+  [OK]/[FAIL] Ticket X.Y — ... (kaynak: lab NNN).
+- solution.md dosya adı değişmez (labctl bunu arar) ama içerik tam
+  komut çözümü değil, ticket → kaynak lab kriteri haritasıdır.
+
+Kapsam kuralı: her Gün, o ana kadar TAMAMLANMIŞ olan ana müfredat
+konularının tamamını kapsar (şu an 001-012). Faz B/C ilerledikçe
+kapsam genişler; geçmiş günler geriye dönük güncellenmez.
+
+En kritik kural — Gün 1'den öğrenilen ders: Gün 1, orijinal labların
+hikaye ve verisini büyük ölçüde birebir uyarladı (aynı dosya adları,
+aynı örnek veri kalıpları — ayşe/mehmet, /srv/proje, vardiya günlüğü).
+İlk tekrar için kabul edilebilirdi ama tekrarın amacı gerçek aşinalık,
+ezber değil. Gün 2'DEN İTİBAREN her gün TAMAMEN YENİ bir iş senaryosu
+kullanır: farklı kurum, farklı dosya/kullanıcı adları, farklı spesifik
+veri — aynı komut/konu yüzeyi korunur ama önceki günlerin metninden
+veya verisinden kopyalanmaz. Yeni bir Gün tasarlanmadan önce önceki
+günlerin hikaye çerçeveleri kontrol edilir ve tekrar edilmez.
+
+Süre kaydı script'lerin işi değil; Yavuz kendi JOURNAL.md'sine elle
+not düşer.
+
 ## Portföy notu
 
 Public repo + tarihli commit geçmişi + debrief notları, "Linux biliyorum"
