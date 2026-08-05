@@ -1,0 +1,12 @@
+# PatiVet yedek sunucu — EPEL deposu.
+#
+# Kurtarma sirasinda depo tanimi elle geri konuldu ama KAPALI birakildi.
+# epel-release paketi kurulu olmadigi icin imza anahtari da /etc/pki altinda
+# yok; bu yuzden gpgcheck bu makinede kapali. Uretim sunucusunda boyle
+# birakilmaz — burada kurtarma senaryosunun bir parcasi.
+[epel]
+name=Extra Packages for Enterprise Linux $releasever - $basearch
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=0
+gpgcheck=0
+countme=1

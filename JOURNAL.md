@@ -16,6 +16,90 @@ Format: en yeni girdi en üstte.
 
 ---
 
+## 2026-08-05 — Gün 2 (901-gun-02a/02b) yazıldı: PatiVet / Yedek Sunucu Günü
+
+### Yapılanlar
+
+- **Genel Tekrar İzi'nin ikinci turu yazıldı.** `labs/901-gun-02a`
+  (ticket 1-6, `container`, 47 kriter) ve `labs/901-gun-02b`
+  (ticket 7-13, `container-systemd`, 104 kriter). Toplam 151 kriter,
+  001-012'nin tamamını kapsıyor.
+- **Senaryo tamamen yeni: PatiVet Klinikleri / Yedek Sunucu Günü.**
+  UPS arızası ana sunucuyu götürmüş, yarım yapılandırılmış DR
+  makinesi üretime alınıyor. CONTEXT.md'nin "Gün 2'den itibaren
+  tamamen yeni iş senaryosu" kuralı uygulandı: Gün 1'in hiçbir adı,
+  yolu veya çerçevesi kullanılmadı. Yeni kadro derya/kaan/oguz/
+  randevubot, grup `vetekip` (GID 4600), kök `/srv/klinik`.
+  DR çerçevesinin faydası: setup'ın her kriteri bozuk kurmasının
+  artık diegetik bir gerekçesi var, ticket başına hikâye uydurmaya
+  gerek kalmıyor.
+- **Her iki lab da container'da 0'dan N'e çözülerek doğrulandı**,
+  sonra resetlendi: 02a 0/47 → 47/47 → 0/47, 02b 3/104 → 104/104 →
+  3/104. Çözücü scriptler scratchpad'de kaldı, repoya girmedi.
+
+### Kararlar
+
+- **TASK.md yazımında CONTEXT.md kuralına dönüldü.** Gün 1'in
+  TASK.md'leri kalın, backtick ve markdown tablo kullanıyordu; bu
+  CONTEXT.md'nin açık kuralına aykırıydı. Gün 2 sıkı biçimde yazıldı:
+  setext başlık, 72 sütun, düz metin yollar, tablo yok. Gün 1
+  dosyaları geriye dönük düzeltilmedi.
+- **Ticketlar hikâye düzeyinde zincirli, teknik olarak bağımsız.**
+  Sert bağımlılık kurulmadı; takılan öğrenci günün geri kalanından
+  yine geri bildirim alabiliyor. Tek yumuşak bağ 02a Ticket 2.10
+  (`student` → `vetekip`): o olmadan 2770 dizin Ticket 1/3/4'ü
+  ölçülemez yapıyor. check.sh bu durumda ayrı bir `[NOTE]` basıyor
+  ki hata Ticket 1'e yazılmasın. `/srv/klinik` setup'ta bilerek
+  `0755 root:root` bırakıldı, böylece Ticket 1 ilk saniyeden
+  itibaren ölçülebiliyor.
+- **Ticket 4'ün ayar dosyaları `/etc/klinik` altına alındı.** Brief
+  onları `/srv/klinik/ayarlar` altında istiyordu ama Ticket 3
+  "`ayarlar/` ile `ayarlar-yedek/` birebir aynı olmalı" diyor;
+  aynı dosyada iki ticket çakışırdı. Ayrıldılar.
+- **Yeni asset üretilmedi, Dockerfile değişmedi.** 02b'nin GPG ve
+  paket varlıkları image'daki `/opt/lab-assets` altından geliyor,
+  setup onları `/opt/paket`'e kopyalıyor.
+- **`data/` dizini 5 dosya kuralının bilinçli istisnası.**
+  `901-gun-02b/data/epel.repo` kapalı (`enabled=0`) olarak kuruluyor;
+  öğrenci onu etkinleştirecek. `labctl` klasörün tamamını kopyaladığı
+  için ek dosya sorun çıkarmıyor.
+
+### Yazarken çıkan ve düzeltilen hatalar
+
+- **Bedava geçen kriterler.** İlk koşuda 02a'da 2, 02b'de 6 kriter
+  başlangıç durumunda geçiyordu. İkisi gerçek check hatasıydı
+  (02a 6.7: script yokken döngü hiç dönmüyor, kriter sessizce
+  geçiyordu; 02b 12.16: var olmayan birimde `systemctl show` 0
+  döndürüyor, "0 saniye kaldı" sanılıyordu). Kalanlar için setup
+  sıkılaştırıldı. Geriye yalnız üç **korkuluk kriteri** kaldı
+  (7.13, 9.11, 10.16) — "bu dosyaya dokunma" diyen, tanımı gereği
+  bozulamayan kriterler.
+- **`gpg --list-secret-keys` boş anahtarlıkta da 0 dönüyor.** Kimlik
+  verilmeden yapılan sınama hep "anahtar var" diyordu; hem setup'ın
+  kendi doğrulaması hem check 13.10 kimlik verecek şekilde düzeltildi.
+- **`sshd` yeniden başlatıldı mı sınaması toleransa takılıyordu.**
+  Monotonik saati epoch'a çevirmek yuvarlama getiriyor; config mtime
+  ile servis başlangıcı arasındaki 2 saniyelik fark 1 saniyelik
+  toleransla yutuluyordu. check artık önce mutlak `ActiveEnterTimestamp`
+  okuyor, setup da aradaki boşluğu 4 saniyeye çıkardı.
+- **Aynı normalizasyon iki tarafa da uygulanmalı.** 10.14'te beklenen
+  ve bulunan `.deb` dosya listeleri farklı sırada süzülüyordu
+  (`./` girdisi ancak sondaki eğik çizgi atıldıktan SONRA boşalıyor);
+  tek bir yardımcı fonksiyona indirildi.
+- **`sort -rn` beraberlikte kırılgan.** 02a Ticket 4.3'ün IP sayımları
+  başta beraberlik içeriyordu; `head -5` sıralaması son-çare satır
+  karşılaştırmasına düşüyordu. Veri, sayımlar birbirinden farklı
+  olacak şekilde yeniden kuruldu.
+
+### Sonraki adım
+
+Yavuz `901-gun-02a` ve `901-gun-02b`'yi kendi başına çözecek, debrief
+yapılacak, PROGRESS.md güncellenecek. Gün 3 tasarlanırken yine yeni
+bir senaryo zorunlu (CONTEXT.md kuralı) ve Gün 1 ile Gün 2'nin
+çerçeveleri kontrol edilecek.
+
+---
+
 ## 2026-07-31 — 010 debrief'i işlendi, lab 011 yazıldı
 
 ### Yapılanlar

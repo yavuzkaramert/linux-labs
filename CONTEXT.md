@@ -315,6 +315,33 @@ günlerin hikaye çerçeveleri kontrol edilir ve tekrar edilmez.
 Süre kaydı script'lerin işi değil; Yavuz kendi JOURNAL.md'sine elle
 not düşer.
 
+### Gün kaydı
+
+- **Gün 1** = `labs/900-vardiya-01a` + `900-vardiya-01b`. İlk gün / gece
+  vardiyası çerçevesi, 145 kriter. Orijinal labların hikaye ve verisini
+  büyük ölçüde uyarladı (tek seferlik istisna).
+- **Gün 2** = `labs/901-gun-02a` + `901-gun-02b`. **PatiVet Klinikleri /
+  Yedek Sunucu Günü** (UPS arızası sonrası DR sunucusunu üretime alma),
+  001-012'nin tamamını kapsar. 02a: 6 ticket / 47 kriter / `container`.
+  02b: 7 ticket / 104 kriter / `container-systemd` + ağ. Tamamen yeni
+  senaryo, veri ve isimler: derya/kaan/oguz/randevubot, grup `vetekip`
+  (GID 4600), `/srv/klinik`. Gün 1'in hiçbir adı veya yolu kullanılmadı.
+
+Bu izde iki kalıcı uygulama notu daha:
+
+- **Korkuluk kriterleri.** "Şu dosyaya dokunma" diyen kriterler tanımı
+  gereği bozulamaz, dolayısıyla ilk koşuda geçerler ve "sıfır bedava OK"
+  kuralının bilinen istisnasıdır. Amaçları ödül değil yan hasarı
+  yakalamaktır. Gün 1'de altı, Gün 2'de dört tane var (02a: 0, 02b: 3 —
+  01a'daki gizli dosya sahiplik kriteri Gün 2'de bilerek bozulur hâle
+  getirildi). Sayıları solution.md'de açıkça yazılır.
+- **`data/` dizini.** 5 dosya kuralının tek istisnası: `901-gun-02b`
+  altında `data/epel.repo` durur, setup onu `/etc/yum.repos.d/`'ye
+  kapalı olarak kurar. `labctl` lab klasörünü `docker cp "$LAB_DIR/."`
+  ile kopyaladığı için ek dosyalar sorunsuz taşınır. GPG ve paket
+  varlıkları image'daki `/opt/lab-assets` altından gelir; yeni asset
+  üretilmez, Dockerfile değişmez.
+
 ## Portföy notu
 
 Public repo + tarihli commit geçmişi + debrief notları, "Linux biliyorum"
